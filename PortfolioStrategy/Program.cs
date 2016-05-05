@@ -6,15 +6,16 @@ namespace PortfolioStrategy
     {
         static void Main(string[] args)
         {
-            DateTime[] date;
+            var ddd = new AssetModel("../../../DDD.csv");
 
-            double[] dddPrice, dddVolume;
+            var dddEstimatingPart = ddd.GetFirstTimeInterval(countOfYears: 2);
 
-            Import.GetDataFromFile("../../../DDD.csv", out dddPrice, out dddVolume, out date);
+            var startIndex = dddEstimatingPart.Dates.Length;
+            var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
 
-            var length = Import.GetFirstTimeIntervalLength(date, 2);
-
-            Console.WriteLine(length);
+            Console.WriteLine(ddd.Dates.Length);
+            Console.WriteLine(dddEstimatingPart.Dates.Length);
+            Console.WriteLine(dddTradingPart.Dates.Length);
         }
     }
 }

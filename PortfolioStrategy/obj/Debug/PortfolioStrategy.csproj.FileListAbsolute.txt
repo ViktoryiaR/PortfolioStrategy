@@ -6,3 +6,11 @@ D:\Учёба\4 курс\8 семестр\! Курсовая работа\Portfo
 D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\obj\Debug\PortfolioStrategy.csprojResolveAssemblyReference.cache
 D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\obj\Debug\PortfolioStrategy.exe
 D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\obj\Debug\PortfolioStrategy.pdb
+D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\PortfolioStrategy.exe.config
+D:\!Other\PortfolioStrategy\PortfolioStrategy\obj\Debug\PortfolioStrategy.exe
+D:\!Other\PortfolioStrategy\PortfolioStrategy\obj\Debug\PortfolioStrategy.pdb
+D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\PortfolioStrategy.exe
+D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\PortfolioStrategy.pdb
+D:\!Other\PortfolioStrategy\PortfolioStrategy\obj\Debug\PortfolioStrategy.csprojResolveAssemblyReference.cache
+D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\FuncLib.dll
+D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\FuncLibIpopt.dll
