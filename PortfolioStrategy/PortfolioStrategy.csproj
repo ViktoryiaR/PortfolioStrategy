@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="BayesianRegression.cs" />
     <Compile Include="AssetModel.cs" />
+    <Compile Include="IntervalModel.cs" />
     <Compile Include="KMeans.cs" />
     <Compile Include="LeastSquaresEstimate.cs" />
     <Compile Include="Program.cs" />

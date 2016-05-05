@@ -6,12 +6,23 @@ namespace PortfolioStrategy
     class AssetModel
     {
         public DateTime[] Dates { get; set; }
-
         public double[] Prices { get; set; }
+        public int[] Volume { get; set; }
 
-        public double[] Volume { get; set; }
+        public IntervalModel[] PriceIntervals30Days { get; set; }
+        public IntervalModel[] PriceIntervals60Days { get; set; }
+        public IntervalModel[] PriceIntervals120Days { get; set; }
 
-        public AssetModel() {}
+        public AssetModel(DateTime[] dates, double[] prices, int[] volume)
+        {
+            this.Dates = dates;
+            this.Prices = prices;
+            this.Volume = volume;
+
+            this.PriceIntervals30Days = this.GetPriceIntervals(30);
+            this.PriceIntervals60Days = this.GetPriceIntervals(60);
+            this.PriceIntervals120Days = this.GetPriceIntervals(120);
+        }
 
         public AssetModel(string sourceFilePath)
         {
@@ -24,7 +35,7 @@ namespace PortfolioStrategy
             var m = lines.Length - 1;
 
             var prices = new double[m];
-            var volume = new double[m];
+            var volume = new int[m];
             var dates = new DateTime[m];
 
             char[] del = { ';' };
@@ -37,13 +48,27 @@ namespace PortfolioStrategy
                     int.Parse(strdate.Substring(0, 4)),
                     int.Parse(strdate.Substring(4, 2)),
                     int.Parse(strdate.Substring(6, 2)));
-                prices[i] = double.Parse(row[1].Replace('.', ','));
-                volume[i] = double.Parse(row[5].Replace('.', ','));
+                prices[i] = double.Parse(row[1]);
+                volume[i] = int.Parse(row[5]);
             }
 
             this.Dates = dates;
             this.Prices = prices;
             this.Volume = volume;
+
+            this.PriceIntervals30Days = GetPriceIntervals(30);
+            this.PriceIntervals60Days = GetPriceIntervals(60);
+            this.PriceIntervals120Days = GetPriceIntervals(120);
+        }
+
+        private IntervalModel[] GetPriceIntervals(int intervalsLength)
+        {
+            var intervals = new IntervalModel[this.Prices.Length - intervalsLength];
+            for (int i = 0; i < intervals.Length; i++)
+            {
+                intervals[i] = new IntervalModel(this.Prices.SubArray(i, intervalsLength));
+            }
+            return intervals;
         }
 
         public AssetModel GetFirstTimeInterval(int countOfYears)
@@ -59,24 +84,24 @@ namespace PortfolioStrategy
                 } while (this.Dates[length].Year == year);
             }
 
-            return new AssetModel()
-            {
-                Dates = this.Dates.SubArray(0, length),
-                Prices = this.Prices.SubArray(0, length),
-                Volume = this.Volume.SubArray(0, length)
-            };
+            return new AssetModel
+            (
+                this.Dates.SubArray(0, length),
+                this.Prices.SubArray(0, length),
+                this.Volume.SubArray(0, length)
+            );
         }
 
         public AssetModel GetSecondTimeInterval(int startIndex)
         {
             var length = this.Dates.Length - startIndex;
 
-            return new AssetModel()
-            {
-                Dates = this.Dates.SubArray(startIndex, length),
-                Prices = this.Prices.SubArray(startIndex, length),
-                Volume = this.Volume.SubArray(startIndex, length)
-            };
+            return new AssetModel
+            (
+                this.Dates.SubArray(startIndex, length),
+                this.Prices.SubArray(startIndex, length),
+                this.Volume.SubArray(startIndex, length)
+            );
         }
     }
 }

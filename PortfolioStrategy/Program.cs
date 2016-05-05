@@ -13,9 +13,10 @@ namespace PortfolioStrategy
             var startIndex = dddEstimatingPart.Dates.Length;
             var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
 
-            Console.WriteLine(ddd.Dates.Length);
-            Console.WriteLine(dddEstimatingPart.Dates.Length);
-            Console.WriteLine(dddTradingPart.Dates.Length);
+            Console.WriteLine(dddEstimatingPart.Prices.Length);
+            Console.WriteLine(dddEstimatingPart.PriceIntervals30Days.Length);
+            Console.WriteLine(dddEstimatingPart.PriceIntervals30Days[0].X);
+            Console.WriteLine(dddEstimatingPart.PriceIntervals30Days[0].Y);
         }
     }
 }
