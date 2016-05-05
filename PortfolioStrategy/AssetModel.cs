@@ -1,30 +1,28 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace PortfolioStrategy
 {
+    class DayInformation
+    {
+        public DateTime Date { get; set; }
+
+        public double Price { get; set; }
+
+        public int Volume { get; set; }
+
+        public double[][] LastDaysPrices { get; set; }
+    }
+
     class AssetModel
     {
-        public DateTime[] Dates { get; set; }
-        public double[] Prices { get; set; }
-        public int[] Volume { get; set; }
+        public DayInformation[] DayInformations { get; set; }
 
-        public IntervalModel[] PriceIntervals30Days { get; set; }
-        public IntervalModel[] PriceIntervals60Days { get; set; }
-        public IntervalModel[] PriceIntervals120Days { get; set; }
+        public AssetModel() { }
 
-        public AssetModel(DateTime[] dates, double[] prices, int[] volume)
-        {
-            this.Dates = dates;
-            this.Prices = prices;
-            this.Volume = volume;
-
-            this.PriceIntervals30Days = this.GetPriceIntervals(30);
-            this.PriceIntervals60Days = this.GetPriceIntervals(60);
-            this.PriceIntervals120Days = this.GetPriceIntervals(120);
-        }
-
-        public AssetModel(string sourceFilePath)
+        public AssetModel(string sourceFilePath, int[] numDays)
         {
             string[] lines = { };
             using (StreamReader reader = new StreamReader(sourceFilePath))
@@ -34,9 +32,7 @@ namespace PortfolioStrategy
 
             var m = lines.Length - 1;
 
-            var prices = new double[m];
-            var volume = new int[m];
-            var dates = new DateTime[m];
+            var dayInformations = new DayInformation[m];
 
             char[] del = { ';' };
 
@@ -44,29 +40,48 @@ namespace PortfolioStrategy
             {
                 var row = lines[i + 1].Split(del);
                 var strdate = row[0];
-                dates[i] = new DateTime(
-                    int.Parse(strdate.Substring(0, 4)),
-                    int.Parse(strdate.Substring(4, 2)),
-                    int.Parse(strdate.Substring(6, 2)));
-                prices[i] = double.Parse(row[1]);
-                volume[i] = int.Parse(row[5]);
+
+                dayInformations[i] = new DayInformation
+                {
+                    Date = new DateTime(int.Parse(strdate.Substring(0, 4)),
+                                        int.Parse(strdate.Substring(4, 2)),
+                                        int.Parse(strdate.Substring(6, 2))),
+                    Price = double.Parse(row[1]),
+                    Volume = int.Parse(row[5])
+                };
+
+                if (i < 120) continue;
+
+                dayInformations[i].LastDaysPrices = new double[numDays.Length][];
+
+                for (int j = 0; j < numDays.Length; j++)
+                {
+                    dayInformations[i].LastDaysPrices[j] = dayInformations
+                        .SubArray(i - numDays[j], numDays[j]).Select(_ => _.Price).ToArray();
+                }
             }
 
-            this.Dates = dates;
-            this.Prices = prices;
-            this.Volume = volume;
-
-            this.PriceIntervals30Days = GetPriceIntervals(30);
-            this.PriceIntervals60Days = GetPriceIntervals(60);
-            this.PriceIntervals120Days = GetPriceIntervals(120);
+            this.DayInformations = dayInformations;
         }
 
-        private IntervalModel[] GetPriceIntervals(int intervalsLength)
+        public double[][] GetPriceIntervals(int intervalsLength, int lastChangesLength)
         {
-            var intervals = new IntervalModel[this.Prices.Length - intervalsLength];
+            var intervals = new double[this.DayInformations.Length - intervalsLength][];
             for (int i = 0; i < intervals.Length; i++)
             {
-                intervals[i] = new IntervalModel(this.Prices.SubArray(i, intervalsLength));
+                var x = this.DayInformations.Select(_ => _.Price).ToArray().SubArray(i, intervalsLength);
+
+                var lastPriceChanges = new double[lastChangesLength];
+                for (int j = 1; j <= lastChangesLength; j++)
+                {
+                    lastPriceChanges[j - 1] = x[intervalsLength - j] - x[intervalsLength - j - 1];
+                }
+
+                var y = lastPriceChanges.Average();
+
+                intervals[i] = new double[intervalsLength + 1];
+                x.CopyTo(intervals[i], 0);
+                intervals[i][intervalsLength] = y;
             }
             return intervals;
         }
@@ -77,31 +92,27 @@ namespace PortfolioStrategy
 
             for (int y = 1; y <= countOfYears; y++)
             {
-                var year = this.Dates[length].Year;
+                var year = this.DayInformations[length].Date.Year;
                 do
                 {
                     length++;
-                } while (this.Dates[length].Year == year);
+                } while (this.DayInformations[length].Date.Year == year);
             }
 
             return new AssetModel
-            (
-                this.Dates.SubArray(0, length),
-                this.Prices.SubArray(0, length),
-                this.Volume.SubArray(0, length)
-            );
+            { 
+                DayInformations = this.DayInformations.SubArray(0, length)
+            };
         }
 
         public AssetModel GetSecondTimeInterval(int startIndex)
         {
-            var length = this.Dates.Length - startIndex;
+            var length = this.DayInformations.Length - startIndex;
 
             return new AssetModel
-            (
-                this.Dates.SubArray(startIndex, length),
-                this.Prices.SubArray(startIndex, length),
-                this.Volume.SubArray(startIndex, length)
-            );
+            {
+                DayInformations = this.DayInformations.SubArray(startIndex, length)
+            };
         }
     }
 }

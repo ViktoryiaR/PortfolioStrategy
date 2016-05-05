@@ -10,5 +10,13 @@ namespace PortfolioStrategy
             Array.Copy(data, index, result, 0, length);
             return result;
         }
+
+        public static T[] AddToEnd<T>(this T[] data, T element)
+        {
+            T[] result = new T[data.Length + 1];
+            data.CopyTo(result, 0);
+            result[data.Length] = element;
+            return result;
+        }
     }
 }

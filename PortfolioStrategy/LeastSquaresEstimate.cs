@@ -1,5 +1,6 @@
 ﻿using System;
-
+using System.Linq;
+using System.Xml;
 using FuncLib.Functions;
 using FuncLib.Optimization;
 
@@ -7,33 +8,74 @@ namespace PortfolioStrategy
 {
     class LeastSquaresEstimate
     {
-        public static double[] FindW(Function[][] x, ref Variable c, double[] y)
+        public static double[] FindWandC(Function[][] x, double[] y, ref Variable c)
         {
-            Variable w0 = new Variable();
-            Variable w1 = new Variable();
-            Variable w2 = new Variable();
-            Variable w3 = new Variable();
-            Variable w4 = new Variable();
+            var w = (new Variable[x[0].Length + 1]).Select(_ => new Variable()).ToArray();
 
             Function f = 0;
 
-            for (int i = 0; i < x.Length; i++)
+            for (var i = 0; i < x.Length; i++)
             {
-                f += Function.Pow(y[i] - w0 - w1 * x[i][0] - w2 * x[i][1] - w3 * x[i][2] - w4 * x[i][3], 2);
+                var term = y[i] - w[0];
+                for (var j = 0; j < x[i].Length; j++)
+                {
+                    term -= w[j + 1]*x[i][j];
+                }
+                f += Function.Pow(term, 2);
             }
 
+            var variables = w.AddToEnd(c);
+
             Optimizer o = new BfgsOptimizer();
-            o.Variables.Add(w0, w1, w2, w3, w4, c);
+            o.Variables.Add(variables);
             o.ObjectiveFunction = f;
 
-            Random r = new Random(1);
-            IOptimizerResult or = o.Run(w0 | r.NextDouble(), w1 | r.NextDouble(), w2 | r.NextDouble(), w3 | r.NextDouble(), w4 | r.NextDouble(), c | r.NextDouble());
+            var r = new Random(1);
+            var varAssignment = variables.Select(_ => new VariableAssignment(_, r.NextDouble())).ToArray();
+            var or = o.Run(varAssignment);
 
-            double[] w_c = new double[] { or.OptimalPoint[w0], or.OptimalPoint[w1], or.OptimalPoint[w2], or.OptimalPoint[w3], or.OptimalPoint[w4], or.OptimalPoint[c]};
+            var wc = variables.Select(_ => or.OptimalPoint[_]).ToArray();
 
             Console.WriteLine("Minimized to: " + or.OptimalValue);
 
-            return w_c;
+            return wc;
+        }
+
+        public static double[] FindWandC(double[][] x, double[] y)
+        {
+            var w = new Variable[x[0].Length + 1];
+            for (var j = 0; j < w.Length; j++)
+            {
+                w[j] = new Variable();
+            }
+
+            Function f = 0;
+
+            for (var i = 0; i < x.Length; i++)
+            {
+                var term = y[i] - w[0];
+                for (var j = 0; j < x[i].Length; j++)
+                {
+                    term -= w[j + 1] * x[i][j];
+                }
+                f += Function.Pow(term, 2);
+            }
+
+            var variables = w;
+
+            Optimizer o = new BfgsOptimizer();
+            o.Variables.Add(variables);
+            o.ObjectiveFunction = f;
+
+            var r = new Random(1);
+            var varAssignment = variables.Select(_ => new VariableAssignment(_, r.NextDouble())).ToArray();
+            var or = o.Run(varAssignment);
+
+            var wc = variables.Select(_ => or.OptimalPoint[_]).ToArray();
+
+            Console.WriteLine("Minimized to: " + or.OptimalValue);
+
+            return wc;
         }
     }
 }

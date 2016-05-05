@@ -9,6 +9,8 @@ namespace PortfolioStrategy
 
         public double Y { get; set; }
 
+        public double[] XandY { get; set; }
+
         public IntervalModel(double[] x)
         {
             this.X = x;
@@ -23,6 +25,10 @@ namespace PortfolioStrategy
             }
 
             this.Y = lastPriceChanges.Average(); 
+
+            this.XandY = new double[length + 1];
+            this.X.CopyTo(this.XandY, 0);
+            this.XandY[length] = this.Y;
         }
     }
 }
