@@ -24,9 +24,6 @@ namespace PortfolioStrategy
 
             var dddEstimatingPart = ddd.GetFirstTimeInterval(countOfYears: 2);
 
-            //var startIndex = dddEstimatingPart.DayInformations.Length;
-            //var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
-
             var kmeans = new double[numLastDays.Length][][];
 
             for (var j = 0; j < numLastDays.Length; j++)
@@ -36,96 +33,82 @@ namespace PortfolioStrategy
 
             var numSkipedItems = numLastDays.Max();
             var dddRegressionPart = dddEstimatingPart.GetSecondTimeInterval(numSkipedItems);
-            PlotAssetPrices(new[] { dddRegressionPart }, new[] { "DDDRegressionPart" }, new[] { OxyColors.DarkOliveGreen }, "DDDRegressionPart");
 
             var numRegressionItems = dddRegressionPart.DayInformations.Length;
 
             var averageVolume = dddRegressionPart.DayInformations.Select(_ => _.Volume).Average();
 
-            var c = new Variable();
-            var regressionX = new Function[numRegressionItems - 1][];
-            //var c = -0.01;
-            //var regressionX = new double[numRegressionItems - 1][];
+            var c = -0.04;
+            var regressionX = new double[numRegressionItems - 1][];
             var regressionY = new double[numRegressionItems - 1];
 
-            var alldp = new double[numRegressionItems - 1][];
-            var allr = new double[numRegressionItems - 1];
+            var dp = new double[numRegressionItems - 1][];
+            var r = new double[numRegressionItems - 1];
 
             for (var i = 0; i < numRegressionItems - 1; i++)
             {
-                var dp = new Function[numLastDays.Length];
-                //var dp = new double[numLastDays.Length];
+                dp[i] = new double[numLastDays.Length];
 
                 for (var j = 0; j < numLastDays.Length; j++)
                 {
-                    dp[j] = BayesianRegression.Bayesian(dddRegressionPart.DayInformations[i].LastDaysPrices[j],
+                    dp[i][j] = BayesianRegression.Bayesian(dddRegressionPart.DayInformations[i].LastDaysPrices[j],
                         kmeans[j], c);
                 }
 
-                var r = dddRegressionPart.DayInformations[i].Volume / averageVolume;
+                r[i] = dddRegressionPart.DayInformations[i].Volume / averageVolume;
 
-                regressionX[i] = dp.AddToEnd(r);
+                regressionX[i] = dp[i].AddToEnd(r[i]);
 
                 regressionY[i] = dddRegressionPart.DayInformations[i + 1].Price -
                                  dddRegressionPart.DayInformations[i].Price;
-
-                //alldp[i] = dp;
-                //allr[i] = r;
             }
 
-            var wAndC = LeastSquaresEstimate.FindWandC(regressionX, regressionY, ref c);
-            //var wAndC = LeastSquaresEstimate.FindWandC(regressionX, regressionY);
+            var w = LeastSquaresEstimate.FindW(regressionX, regressionY);
 
-            //var estPrices = new double[numRegressionItems];
-            //estPrices[0] = dddRegressionPart.DayInformations[0].Price;
-            //for (var i = 0; i < numRegressionItems - 1; i++)
-            //{
-            //    var dp = wAndC[0] + alldp[i][0]*wAndC[1] + alldp[i][1]*wAndC[2] + alldp[i][2]*wAndC[3] +
-            //             allr[i]*wAndC[4];
-            //    estPrices[i + 1] = estPrices[i] + dp;
-            //}
+            var dddEstimatedRegressionPart = CreateEstimatedModel(dddRegressionPart, r, dp, w);
 
-            //var plotModel = new PlotModel
-            //{
-            //    IsLegendVisible = true,
-            //    Axes = {
-            //        new OxyPlot.Axes.DateTimeAxis(){
-            //                Position = AxisPosition.Bottom,
-            //                IntervalType = DateTimeIntervalType.Months,
-            //                StringFormat = "yyyy-MM"
-            //        },
-            //        new OxyPlot.Axes.LinearAxis(){
-            //                Position = AxisPosition.Left,
-            //                Minimum = 0,
-            //                Maximum = 100
-            //        }
-            //    }
-            //};
+            PlotAssetPrices(
+                new[] { dddRegressionPart, dddEstimatedRegressionPart }, 
+                new[] { "DDD", "estDDD" }, 
+                new[] { OxyColors.DarkOliveGreen, OxyColors.DarkMagenta }, 
+                "DDDRegression");
 
-            //var series = new OxyPlot.Series.LineSeries()
-            //{
-            //    Title = "estDDD",
-            //    Color = OxyColors.Aqua,
-            //    DataFieldX = "Date"
-            //};
+            Console.WriteLine(w[0]);
+            Console.WriteLine(w[1]);
+            Console.WriteLine(w[2]);
+            Console.WriteLine(w[3]);
+            Console.WriteLine(w[4]);
 
-            //var dates = dddRegressionPart.DayInformations.Select(_ => _.Date).ToArray();
-            //for(var i = 0; i < estPrices.Length; i++)
-            //{
-            //    series.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(dates[i]), estPrices[i]));
-            //}
-            //plotModel.Series.Add(series);
+            var startIndex = dddEstimatingPart.DayInformations.Length;
+            var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
 
-            //var pngExporter = new PngExporter { Width = 600, Height = 400, Background = OxyColors.White };
-            //pngExporter.ExportToFile(plotModel, "../../../Assets/" + "estRegrPart" + ".png");
+            var treashold = 0.05;
+            Trading.Trade(dddTradingPart, treashold, w, c, averageVolume, kmeans);
+        }
 
-            Console.WriteLine(wAndC[0]);
-            Console.WriteLine(wAndC[1]);
-            Console.WriteLine(wAndC[2]);
-            Console.WriteLine(wAndC[3]);
-            Console.WriteLine(wAndC[4]);
+        private static AssetModel CreateEstimatedModel(AssetModel model, double[] r, double[][] dp, double[] w)
+        {
+            var estInformations = new DayInformation[model.DayInformations.Length];
+            estInformations[0] = model.DayInformations[0];
+            for (var i = 0; i < model.DayInformations.Length - 1; i++)
+            {
+                var dX = w[0];
+                for (var j = 0; j < dp[i].Length; j++)
+                {
+                    dX += dp[i][j]*w[j + 1];
+                }
+                dX += r[i]*w[dp[i].Length + 1];
 
-
+                estInformations[i + 1] = new DayInformation
+                {
+                    Date = model.DayInformations[i + 1].Date,
+                    Price = model.DayInformations[i].Price + dX
+                };
+            }
+            return new AssetModel
+            {
+                DayInformations = estInformations
+            };
         }
 
         private static void PlotAssetPrices(AssetModel[] models, string[] titles, OxyColor[] colors, string plotTitle)
@@ -162,7 +145,7 @@ namespace PortfolioStrategy
                 plotModel.Series.Add(series);
             }
 
-            var pngExporter = new PngExporter { Width = 600, Height = 400, Background = OxyColors.White };
+            var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
             pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
         }
     }

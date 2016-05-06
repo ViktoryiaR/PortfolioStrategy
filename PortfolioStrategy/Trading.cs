@@ -7,162 +7,72 @@ using System.Threading.Tasks;
 
 namespace PortfolioStrategy
 {
-    class Trading
+    static class Trading
     {
-        static public void Trade(double t, ref StreamWriter swTreshold,double[] prices, double[] askV, double[] bidV, double[] w_c,
-            double[][] kmeans30s, double[][] kmeans60s, double[][] kmeans120s, int d30, int d60, int d120)
+        static public void Trade(AssetModel model, double threshold, double[] w, double c, double estAverageVolume ,double[][][] kmeans)
         {
-            double c = w_c[5];
+            var position = 0;
+            var bank = 0.0;
 
-            double threshold = t;
-            double position = 0;
-            double bank = 0;
+            var error = 0.0;
 
-            double error = 0;
-
-            int L = 0;
             bool isTrade = false;
-            List<double> profits = new List<double>();
-            double cumProfit = 0.0;
-            List<double> holdTime = new List<double>();
-            double curHoldTime = 0;
+            var profits = new List<double>();
+            var cumProfit = 0.0;
 
-            //StreamWriter writerProfit = new StreamWriter("PROFIT.csv");
-            StreamWriter writer = new StreamWriter("PricesPredictProfits.csv");
-            for (int i = 0; i <= d120 + 30; i++)
+            var n = model.DayInformations.Length - 1;
+            var dp = new double[n][];
+            var r = new double[n];
+
+            for (var i = 0; i < n; i++)
             {
-                writer.WriteLine(prices[i]);
-            }
+                dp[i] = new double[kmeans.Length]; //number of regression intervals
 
-            for (int i = d120 + 30; i < prices.Length - 1; i++)
-            {
-                #region ith price30, price60, price120
-
-                double[] price30 = new double[d30];
-                for (int j = i - d30 + 1; j <= i; j++)
+                for (var j = 0; j < kmeans.Length; j++)
                 {
-                    price30[j - i + d30 - 1] = prices[j];
+                    dp[i][j] = BayesianRegression.Bayesian(model.DayInformations[i].LastDaysPrices[j],
+                        kmeans[j], c);
                 }
 
-                double[] price60 = new double[d60];
-                for (int j = i - d60 + 1; j <= i; j++)
+                r[i] = model.DayInformations[i].Volume / estAverageVolume;
+
+                var dP = w[0];
+                for (var j = 0; j < dp[i].Length; j++)
                 {
-                    price60[j - i + d60 - 1] = prices[j];
+                    dP += dp[i][j] * w[j + 1];
                 }
+                dP += r[i] * w[dp[i].Length + 1];
 
-                double[] price120 = new double[d120];
-                for (int j = i - d120 + 1; j <= i; j++)
-                {
-                    price120[j - i + d120 - 1] = prices[j];
-                }
-
-                #endregion
-
-                double dp1 = BayesianRegression.Bayesian(price30, kmeans30s, c);
-                double dp2 = BayesianRegression.Bayesian(price60, kmeans60s, c);
-                double dp3 = BayesianRegression.Bayesian(price120, kmeans120s, c);
-
-                double r = (bidV[i] - askV[i]) / (bidV[i] + askV[i]);
-
-                double dp = w_c[0] + w_c[1] * dp1 + w_c[2] * dp2 + w_c[3] * dp3 + w_c[4] * r;
-
-                error += Math.Pow(prices[i + 1] - (prices[i] + dp), 2);
-                writer.Write(prices[i + 1] + ";" + (prices[i] + dp) + ";");
+                error += Math.Pow(model.DayInformations[i + 1].Price - (model.DayInformations[i].Price + dP), 2);
 
                 //BUY
-                if (dp > threshold && position <= 0)
+                if (dP > threshold && position <= 0)
                 {
                     position++;
-                    bank -= prices[i];
+                    bank -= model.DayInformations[i].Price;
                     Console.WriteLine("BUY - Bank: " + bank + " - Position: " + position);
                     isTrade = true;
                 }
                 //SELL
-                if (dp < - threshold && position >= 0)
+                if (dP < -threshold && position >= 0)
                 {
                     position--;
-                    bank += prices[i];
+                    bank += model.DayInformations[i].Price;
                     Console.WriteLine("SELL - Bank: " + bank + " - Position: " + position);
                     isTrade = true;
                 }
 
-                if (position == 0 && isTrade)
+                if (isTrade && position == 0)
                 {
-                    //writer.Write(bank + ";");
                     profits.Add(bank - cumProfit);
                     cumProfit = bank;
-                    L++;
                 }
 
-                if (isTrade == true)
-                {
-                    holdTime.Add(curHoldTime);
-                    curHoldTime = 0;
-                }
-                else
-                {
-                    curHoldTime++;
-                }
-
-                writer.WriteLine(cumProfit + ";");
                 isTrade = false;
             }
 
-            if(position == 1){
-                position--;
-                bank += prices[prices.Length - 1];
-                Console.WriteLine("SELL - Bank: " + bank + " - Position: " + position);
-                writer.Write(bank + ";");
-
-                profits.Add(bank - cumProfit);
-                cumProfit = bank;
-                L++;
-
-                holdTime.Add(curHoldTime);
-                curHoldTime = 0;
-            }
-            if (position == -1)
-            {
-                position++;
-                bank -= prices[prices.Length - 1];
-                Console.WriteLine("BUY - Bank: " + bank + " - Position: " + position);
-                writer.Write(bank + ";");
-
-                profits.Add(bank - cumProfit);
-                cumProfit = bank;
-                L++;
-
-                holdTime.Add(curHoldTime);
-                curHoldTime = 0;
-            }
-
-            //writer.Write(bank + ";");
-            writer.Close();
-
-            error /= (prices.Length - 1);
-
-            Console.WriteLine("Bank: " + bank);
-            Console.WriteLine("Error: " + error);
-
-            Console.WriteLine();
-
-            double meanP = Similarity.Mean(profits.ToArray());
-            double stdP = Similarity.Std(profits.ToArray());
-
-            double C = Math.Abs(prices[0] - prices[prices.Length - 1]);
-            double SharpeRatio = (meanP * L - C) / L / stdP;
-
-            Console.WriteLine("L: " + L);
-            Console.WriteLine("SharpeRatio: " + SharpeRatio);
-
-            Console.WriteLine();
-
-            double meanHT = Similarity.Mean(holdTime.ToArray());
-
-            Console.WriteLine("Average profit: " + meanP);
-            Console.WriteLine("Average holding time: " + meanHT);
-
-            swTreshold.WriteLine(t + ";" + L + ";" + meanP + ";" + bank + ";" + meanHT + ";" + error);
+            Console.WriteLine("Error = " + error);
+            Console.WriteLine("Bank = " + bank);
         }
     }
 }
