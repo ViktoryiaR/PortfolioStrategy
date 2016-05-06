@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using FuncLib.Functions;
-using MathNet.Numerics;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Wpf;
-using DateTimeAxis = OxyPlot.Wpf.DateTimeAxis;
 
 namespace PortfolioStrategy
 {
@@ -15,9 +11,19 @@ namespace PortfolioStrategy
         [STAThread]
         static void Main(string[] args)
         {
+            var parameters = new ParametersModel
+            {
+                NumLastDays = new[] { 30, 60, 120 },
+                NumLastChanges = 10,
+                NumClusters = 20,
+
+                C = -0.04,
+            };
+
             var numLastDays = new[] {30, 60, 120};
             var numLastChanges = 10;
             var numClusters = 20;
+            var c = -0.04;
 
             var ddd = new AssetModel("../../../Assets/DDD.csv", numLastDays);
             PlotAssetPrices(new[] { ddd }, new[] { "DDD" }, new[] { OxyColors.BlueViolet }, "DDD");
@@ -38,7 +44,6 @@ namespace PortfolioStrategy
 
             var averageVolume = dddRegressionPart.DayInformations.Select(_ => _.Volume).Average();
 
-            var c = -0.04;
             var regressionX = new double[numRegressionItems - 1][];
             var regressionY = new double[numRegressionItems - 1];
 
