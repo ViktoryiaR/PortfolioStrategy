@@ -17,5 +17,16 @@
         public double AverageVolume { get; set; }
 
         public double[] W { get; set; }
+
+        public ParametersModel() { }
+
+        public ParametersModel(ParametersModel initialParameters)
+        {
+            this.NumsRegressionDays = initialParameters.NumsRegressionDays;
+            this.NumLastChanges = initialParameters.NumLastChanges;
+            this.NumClusters = initialParameters.NumClusters;
+
+            this.C = initialParameters.C;
+        }
     }
 }

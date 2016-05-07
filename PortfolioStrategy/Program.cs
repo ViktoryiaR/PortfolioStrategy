@@ -14,29 +14,47 @@ namespace PortfolioStrategy
         [STAThread]
         static void Main(string[] args)
         {
-            var parameters = new ParametersModel
+            var initialParameters = new ParametersModel()
             {
                 NumsRegressionDays = new[] { 30, 60, 120 },
                 NumLastChanges = 10,
                 NumClusters = 20,
 
-                C = -0.04,
+                C = -0.01
             };
 
-            var ddd = new AssetModel("../../../Assets/DDD.csv", parameters.NumsRegressionDays);
+            var ddd = new AssetModel("../../../Assets/DDD.csv", initialParameters.NumsRegressionDays);
             PlotAssetPrices(new[] { ddd }, new[] { "DDD" }, new[] { OxyColors.BlueViolet }, "DDD");
 
             var dddEstimatingPart = ddd.GetFirstTimeInterval(countOfYears: 2);
+            var dddParameters = EstimateAssetParameters("DDD", dddEstimatingPart, initialParameters);
+
+            var startIndex = dddEstimatingPart.DayInformations.Length;
+            var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
+
+            var dddResult = Trading.Trade(dddTradingPart, dddParameters);
+            Console.WriteLine(dddResult.Bank);
+
+            PlotCumulativeProfits(dddResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, "DDDBank");
+            PlotProfits(dddResult.Profits, "Profits", OxyColors.Navy, "DDDProfits",
+                dddResult.CumulativeProfits[0].Date, dddResult.CumulativeProfits[dddResult.CumulativeProfits.Count - 1].Date);
+
+            PlotTradingResults(dddResult.CumulativeProfits, dddResult.Profits, "Bank", OxyColors.RosyBrown, "DDDTradingResults");
+        }
+
+        private static ParametersModel EstimateAssetParameters(string assetName, AssetModel estimationModel, ParametersModel initialParameters)
+        {
+            var parameters = new ParametersModel(initialParameters);
 
             parameters.Kmeans = new double[parameters.NumsRegressionDays.Length][][];
             for (var j = 0; j < parameters.NumsRegressionDays.Length; j++)
             {
                 parameters.Kmeans[j] = KMeans.GetNormalizedMeans(
-                    dddEstimatingPart.GetPriceIntervals(parameters.NumsRegressionDays[j], parameters.NumLastChanges), 
+                    estimationModel.GetPriceIntervals(parameters.NumsRegressionDays[j], parameters.NumLastChanges),
                     parameters.NumClusters);
             }
 
-            var dddRegressionPart = dddEstimatingPart.GetSecondTimeInterval(parameters.NumsRegressionDays.Max());
+            var dddRegressionPart = estimationModel.GetSecondTimeInterval(parameters.NumsRegressionDays.Max());
             var numRegressionItems = dddRegressionPart.DayInformations.Length;
 
             var regressionX = new double[numRegressionItems - 1][];
@@ -70,15 +88,15 @@ namespace PortfolioStrategy
             var dddEstimatedRegressionPart = CreateEstimatedModel(dddRegressionPart, r, dp, parameters.W);
 
             PlotAssetPrices(
-                new[] { dddRegressionPart, dddEstimatedRegressionPart }, 
-                new[] { "DDD", "estDDD" }, 
-                new[] { OxyColors.DarkOliveGreen, OxyColors.DarkMagenta }, 
-                "DDDRegression");
+                new[] { dddRegressionPart, dddEstimatedRegressionPart },
+                new[] { assetName, "est" + assetName },
+                new[] { OxyColors.DarkOliveGreen, OxyColors.DarkMagenta },
+                assetName + "Regression");
 
             var meanChangeAbs = regressionY.Select(Math.Abs).Average();
             var maxBank = 0.0;
-            var bestTreshold = 0.0;
-            for (var t = meanChangeAbs/100; t < 2 * meanChangeAbs; t += meanChangeAbs / 100)
+            var bestThreshold = 0.0;
+            for (var t = meanChangeAbs / 100; t < 2 * meanChangeAbs; t += meanChangeAbs / 100)
             {
                 parameters.Threshold = t;
                 var bank = Trading.Trade(dddRegressionPart, parameters).Bank;
@@ -86,18 +104,11 @@ namespace PortfolioStrategy
                 if (bank <= maxBank) continue;
 
                 maxBank = bank;
-                bestTreshold = t;
+                bestThreshold = t;
             }
+            parameters.Threshold = bestThreshold;
 
-            var startIndex = dddEstimatingPart.DayInformations.Length;
-            var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
-
-            parameters.Threshold = bestTreshold;
-            var result = Trading.Trade(dddTradingPart, parameters);
-            Console.WriteLine(result.Bank);
-
-            PlotCumulativeProfits(result.CumulativeProfits, "Bank", OxyColors.DarkSeaGreen, "DDDBank");
-            PlotProfits(result.Profits, "Profits", OxyColors.Navy, "DDDProfits");
+            return parameters;
         }
 
         private static AssetModel CreateEstimatedModel(AssetModel model, double[] r, double[][] dp, double[] w)
@@ -211,7 +222,71 @@ namespace PortfolioStrategy
             pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
         }
 
-        private static void PlotProfits(List<ValueOnDate> profits, string title, OxyColor color, string plotTitle)
+        private static void PlotTradingResults(List<ValueOnDate> cumulativeProfits, List<ValueOnDate> profits, string title, OxyColor color, string plotTitle)
+        {
+            var maxValue = cumulativeProfits.Select(_ => Math.Abs(_.Value)).Max();
+            var plotModel = new PlotModel
+            {
+                IsLegendVisible = true,
+                Axes = {
+                    new OxyPlot.Axes.DateTimeAxis(){
+                            Position = AxisPosition.Bottom,
+                            IntervalType = DateTimeIntervalType.Months,
+                            StringFormat = "yyyy-MM"
+                    },
+                    new OxyPlot.Axes.LinearAxis(){
+                            Position = AxisPosition.Left,
+                            Maximum = 1.2*maxValue,
+                            Minimum = -1.2*maxValue
+                    }
+                }
+            };
+
+            var series = new OxyPlot.Series.LineSeries()
+            {
+                Title = title,
+                Color = color,
+                DataFieldX = "Date"
+            };
+            foreach (var day in cumulativeProfits)
+            {
+                series.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(day.Date), day.Value));
+            }
+            plotModel.Series.Add(series);
+
+            var series0 = new OxyPlot.Series.LineSeries()
+            {
+                Color = OxyColors.Black,
+                StrokeThickness = 1,
+                DataFieldX = "Date"
+            };
+            series0.Points.Add(new DataPoint(
+                OxyPlot.Axes.DateTimeAxis.ToDouble(cumulativeProfits[0].Date), 0));
+            series0.Points.Add(new DataPoint(
+                OxyPlot.Axes.DateTimeAxis.ToDouble(cumulativeProfits[cumulativeProfits.Count - 1].Date), 0));
+            plotModel.Series.Add(series0);
+
+            foreach (var profit in profits)
+            {
+                var profitSeries = new OxyPlot.Series.LineSeries()
+                {
+                    Color = OxyColors.SeaGreen,
+                    DataFieldX = "Date",
+                    MarkerSize = 5,
+                    MarkerFill = OxyColors.Red,
+                    MarkerType = MarkerType.Circle
+                };
+                profitSeries.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(profit.Date), profit.Value));
+                profitSeries.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(profit.Date), 0));
+
+                plotModel.Series.Add(profitSeries);
+            }
+
+            var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
+            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+        }
+
+        private static void PlotProfits(List<ValueOnDate> profits, string title, OxyColor color, string plotTitle, DateTime start, DateTime end)
         {
             var maxValue = profits.Select(_ => Math.Abs(_.Value)).Max();
             var plotModel = new PlotModel
@@ -254,9 +329,9 @@ namespace PortfolioStrategy
                 StrokeThickness = 1
             };
             series0.Points.Add(new DataPoint(
-                OxyPlot.Axes.DateTimeAxis.ToDouble(profits[0].Date), 0));
+                OxyPlot.Axes.DateTimeAxis.ToDouble(start), 0));
             series0.Points.Add(new DataPoint(
-                OxyPlot.Axes.DateTimeAxis.ToDouble(profits[profits.Count - 1].Date), 0));
+                OxyPlot.Axes.DateTimeAxis.ToDouble(end), 0));
             plotModel.Series.Add(series0);
 
             var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
