@@ -3,6 +3,8 @@ using System.Linq;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Wpf;
+using PortfolioStrategy.Functions;
+using PortfolioStrategy.Models;
 
 namespace PortfolioStrategy
 {
@@ -13,36 +15,28 @@ namespace PortfolioStrategy
         {
             var parameters = new ParametersModel
             {
-                NumLastDays = new[] { 30, 60, 120 },
+                NumsRegressionDays = new[] { 30, 60, 120 },
                 NumLastChanges = 10,
                 NumClusters = 20,
 
                 C = -0.04,
             };
 
-            var numLastDays = new[] {30, 60, 120};
-            var numLastChanges = 10;
-            var numClusters = 20;
-            var c = -0.04;
-
-            var ddd = new AssetModel("../../../Assets/DDD.csv", numLastDays);
+            var ddd = new AssetModel("../../../Assets/DDD.csv", parameters.NumsRegressionDays);
             PlotAssetPrices(new[] { ddd }, new[] { "DDD" }, new[] { OxyColors.BlueViolet }, "DDD");
 
             var dddEstimatingPart = ddd.GetFirstTimeInterval(countOfYears: 2);
 
-            var kmeans = new double[numLastDays.Length][][];
-
-            for (var j = 0; j < numLastDays.Length; j++)
+            parameters.Kmeans = new double[parameters.NumsRegressionDays.Length][][];
+            for (var j = 0; j < parameters.NumsRegressionDays.Length; j++)
             {
-                kmeans[j] = KMeans.GetNormalizedMeans(dddEstimatingPart.GetPriceIntervals(numLastDays[j], numLastChanges), numClusters);
+                parameters.Kmeans[j] = KMeans.GetNormalizedMeans(
+                    dddEstimatingPart.GetPriceIntervals(parameters.NumsRegressionDays[j], parameters.NumLastChanges), 
+                    parameters.NumClusters);
             }
 
-            var numSkipedItems = numLastDays.Max();
-            var dddRegressionPart = dddEstimatingPart.GetSecondTimeInterval(numSkipedItems);
-
+            var dddRegressionPart = dddEstimatingPart.GetSecondTimeInterval(parameters.NumsRegressionDays.Max());
             var numRegressionItems = dddRegressionPart.DayInformations.Length;
-
-            var averageVolume = dddRegressionPart.DayInformations.Select(_ => _.Volume).Average();
 
             var regressionX = new double[numRegressionItems - 1][];
             var regressionY = new double[numRegressionItems - 1];
@@ -50,17 +44,19 @@ namespace PortfolioStrategy
             var dp = new double[numRegressionItems - 1][];
             var r = new double[numRegressionItems - 1];
 
+            parameters.AverageVolume = dddRegressionPart.DayInformations.Select(_ => _.Volume).Average();
+
             for (var i = 0; i < numRegressionItems - 1; i++)
             {
-                dp[i] = new double[numLastDays.Length];
+                dp[i] = new double[parameters.NumsRegressionDays.Length];
 
-                for (var j = 0; j < numLastDays.Length; j++)
+                for (var j = 0; j < parameters.NumsRegressionDays.Length; j++)
                 {
                     dp[i][j] = BayesianRegression.Bayesian(dddRegressionPart.DayInformations[i].LastDaysPrices[j],
-                        kmeans[j], c);
+                        parameters.Kmeans[j], parameters.C);
                 }
 
-                r[i] = dddRegressionPart.DayInformations[i].Volume / averageVolume;
+                r[i] = dddRegressionPart.DayInformations[i].Volume / parameters.AverageVolume;
 
                 regressionX[i] = dp[i].AddToEnd(r[i]);
 
@@ -68,9 +64,9 @@ namespace PortfolioStrategy
                                  dddRegressionPart.DayInformations[i].Price;
             }
 
-            var w = LeastSquaresEstimate.FindW(regressionX, regressionY);
+            parameters.W = LeastSquaresEstimate.FindW(regressionX, regressionY);
 
-            var dddEstimatedRegressionPart = CreateEstimatedModel(dddRegressionPart, r, dp, w);
+            var dddEstimatedRegressionPart = CreateEstimatedModel(dddRegressionPart, r, dp, parameters.W);
 
             PlotAssetPrices(
                 new[] { dddRegressionPart, dddEstimatedRegressionPart }, 
@@ -78,17 +74,11 @@ namespace PortfolioStrategy
                 new[] { OxyColors.DarkOliveGreen, OxyColors.DarkMagenta }, 
                 "DDDRegression");
 
-            Console.WriteLine(w[0]);
-            Console.WriteLine(w[1]);
-            Console.WriteLine(w[2]);
-            Console.WriteLine(w[3]);
-            Console.WriteLine(w[4]);
-
             var startIndex = dddEstimatingPart.DayInformations.Length;
             var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
 
-            var treashold = 0.05;
-            Trading.Trade(dddTradingPart, treashold, w, c, averageVolume, kmeans);
+            parameters.Threshold = 0.05;
+            Trading.Trade(dddTradingPart, parameters);
         }
 
         private static AssetModel CreateEstimatedModel(AssetModel model, double[] r, double[][] dp, double[] w)

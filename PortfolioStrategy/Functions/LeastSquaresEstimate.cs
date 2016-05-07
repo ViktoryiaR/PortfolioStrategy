@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Xml;
 using FuncLib.Functions;
 using FuncLib.Optimization;
 
-namespace PortfolioStrategy
+namespace PortfolioStrategy.Functions
 {
     class LeastSquaresEstimate
     {

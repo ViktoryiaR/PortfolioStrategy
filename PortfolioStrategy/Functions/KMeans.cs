@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PortfolioStrategy
+namespace PortfolioStrategy.Functions
 {
     class KMeans
     {

@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using PortfolioStrategy.Models;
 
-namespace PortfolioStrategy
+namespace PortfolioStrategy.Functions
 {
     static class Trading
     {
-        static public void Trade(AssetModel model, double threshold, double[] w, double c, double estAverageVolume ,double[][][] kmeans)
+        static public void Trade(AssetModel model, ParametersModel parameters)
         {
             var position = 0;
             var bank = 0.0;
@@ -26,27 +23,27 @@ namespace PortfolioStrategy
 
             for (var i = 0; i < n; i++)
             {
-                dp[i] = new double[kmeans.Length]; //number of regression intervals
+                dp[i] = new double[parameters.Kmeans.Length]; //number of regression intervals
 
-                for (var j = 0; j < kmeans.Length; j++)
+                for (var j = 0; j < parameters.Kmeans.Length; j++)
                 {
                     dp[i][j] = BayesianRegression.Bayesian(model.DayInformations[i].LastDaysPrices[j],
-                        kmeans[j], c);
+                        parameters.Kmeans[j], parameters.C);
                 }
 
-                r[i] = model.DayInformations[i].Volume / estAverageVolume;
+                r[i] = model.DayInformations[i].Volume / parameters.AverageVolume;
 
-                var dP = w[0];
+                var dP = parameters.W[0];
                 for (var j = 0; j < dp[i].Length; j++)
                 {
-                    dP += dp[i][j] * w[j + 1];
+                    dP += dp[i][j] * parameters.W[j + 1];
                 }
-                dP += r[i] * w[dp[i].Length + 1];
+                dP += r[i] * parameters.W[dp[i].Length + 1];
 
                 error += Math.Pow(model.DayInformations[i + 1].Price - (model.DayInformations[i].Price + dP), 2);
 
                 //BUY
-                if (dP > threshold && position <= 0)
+                if (dP > parameters.Threshold && position <= 0)
                 {
                     position++;
                     bank -= model.DayInformations[i].Price;
@@ -54,7 +51,7 @@ namespace PortfolioStrategy
                     isTrade = true;
                 }
                 //SELL
-                if (dP < -threshold && position >= 0)
+                if (dP < -parameters.Threshold && position >= 0)
                 {
                     position--;
                     bank += model.DayInformations[i].Price;

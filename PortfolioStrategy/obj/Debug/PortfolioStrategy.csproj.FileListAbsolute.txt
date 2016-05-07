@@ -25,3 +25,14 @@ D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Wpf.pdb
 D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Wpf.xml
 D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Xps.pdb
 D:\!Other\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Xps.xml
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\MathNet.Numerics.dll
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.dll
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Wpf.dll
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Xps.dll
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\MathNet.Numerics.xml
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.pdb
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.xml
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Wpf.pdb
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Wpf.xml
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Xps.pdb
+D:\Учёба\4 курс\8 семестр\! Курсовая работа\PortfolioStrategy\PortfolioStrategy\bin\Debug\OxyPlot.Xps.xml

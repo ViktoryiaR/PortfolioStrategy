@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 
-namespace PortfolioStrategy
+namespace PortfolioStrategy.Models
 {
     class DayInformation
     {
@@ -22,7 +21,7 @@ namespace PortfolioStrategy
 
         public AssetModel() { }
 
-        public AssetModel(string sourceFilePath, int[] numDays)
+        public AssetModel(string sourceFilePath, int[] numRegressionDays)
         {
             string[] lines = { };
             using (StreamReader reader = new StreamReader(sourceFilePath))
@@ -50,14 +49,14 @@ namespace PortfolioStrategy
                     Volume = int.Parse(row[5])
                 };
 
-                if (i < 120) continue;
+                if (i < numRegressionDays.Max()) continue;
 
-                dayInformations[i].LastDaysPrices = new double[numDays.Length][];
+                dayInformations[i].LastDaysPrices = new double[numRegressionDays.Length][];
 
-                for (int j = 0; j < numDays.Length; j++)
+                for (int j = 0; j < numRegressionDays.Length; j++)
                 {
                     dayInformations[i].LastDaysPrices[j] = dayInformations
-                        .SubArray(i - numDays[j], numDays[j]).Select(_ => _.Price).ToArray();
+                        .SubArray(i - numRegressionDays[j], numRegressionDays[j]).Select(_ => _.Price).ToArray();
                 }
             }
 
