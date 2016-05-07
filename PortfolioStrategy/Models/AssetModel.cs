@@ -33,7 +33,7 @@ namespace PortfolioStrategy.Models
 
             var dayInformations = new DayInformation[m];
 
-            char[] del = { ';' };
+            char[] del = { ',' };
 
             for (int i = 0; i < m; i++)
             {

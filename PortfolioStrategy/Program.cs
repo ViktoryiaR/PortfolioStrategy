@@ -25,26 +25,30 @@ namespace PortfolioStrategy
                 C = -0.01
             };
 
-            var ddd = new AssetModel("../../../Assets/DDD.csv", initialParameters.NumsRegressionDays);
-            PlotAssetPrices(new[] { ddd }, new[] { "DDD" }, new[] { OxyColors.BlueViolet }, "DDD");
+            var assetName = "XOM";
+            var assetDirectory = "../../../Assets/" + assetName + "/";
 
-            var dddEstimatingPart = ddd.GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
-            var dddParameters = EstimateAssetParameters("DDD", dddEstimatingPart, initialParameters);
+            var assetModel = new AssetModel(assetDirectory + assetName + ".csv", initialParameters.NumsRegressionDays);
+            PlotAssetPrices(new[] { assetModel }, new[] { assetName }, new[] { OxyColors.BlueViolet }, assetDirectory, assetName + " - All Time-Series");
 
-            var startIndex = dddEstimatingPart.DayInformations.Length;
-            var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
+            var assetEstimatingPart = assetModel.GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
+            var assetParameters = EstimateAssetParameters(assetName, assetDirectory, assetEstimatingPart, initialParameters);
 
-            var dddResult = Trading.Trade(dddTradingPart, dddParameters);
-            Console.WriteLine(dddResult.Bank);
+            var startIndex = assetEstimatingPart.DayInformations.Length;
+            var dddTradingPart = assetModel.GetSecondTimeInterval(startIndex);
 
-            PlotCumulativeProfits(dddResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, "DDDBank");
-            PlotProfits(dddResult.Profits, "Profits", OxyColors.Navy, "DDDProfits",
-                dddResult.CumulativeProfits[0].Date, dddResult.CumulativeProfits[dddResult.CumulativeProfits.Count - 1].Date);
+            var assetResult = Trading.Trade(dddTradingPart, assetParameters);
+            Console.WriteLine(assetResult.Bank);
 
-            PlotBankDynamic(dddResult.CumulativeProfits, dddResult.Profits, "Bank" , "Profit", OxyColors.RosyBrown, OxyColors.Navy, "DDDBankDynamic");
+            PlotCumulativeProfits(assetResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, assetDirectory, assetName + " - Bank Dynamic");
+            PlotProfits(assetResult.Profits, "Profits", OxyColors.Navy, assetDirectory, assetName + " - Profits",
+                assetResult.CumulativeProfits[0].Date, assetResult.CumulativeProfits[assetResult.CumulativeProfits.Count - 1].Date);
+
+            PlotBankDynamicAndProfits(assetResult.CumulativeProfits, assetResult.Profits, 
+                "Bank" , "Profits", OxyColors.RosyBrown, OxyColors.Navy, assetDirectory, assetName + " - Bank Dynamic and Profits");
         }
 
-        private static ParametersModel EstimateAssetParameters(string assetName, AssetModel estimationModel, ParametersModel initialParameters)
+        private static ParametersModel EstimateAssetParameters(string assetName, string assetDirectory, AssetModel estimationModel, ParametersModel initialParameters)
         {
             var parameters = new ParametersModel(initialParameters);
 
@@ -93,7 +97,8 @@ namespace PortfolioStrategy
                 new[] { dddRegressionPart, dddEstimatedRegressionPart },
                 new[] { assetName, "est" + assetName },
                 new[] { OxyColors.DarkOliveGreen, OxyColors.DarkMagenta },
-                assetName + "Regression");
+                assetDirectory, 
+                assetName + " - Regression Part Estimation");
 
             var meanChangeAbs = regressionY.Select(Math.Abs).Average();
             var maxBank = 0.0;
@@ -138,7 +143,7 @@ namespace PortfolioStrategy
             };
         }
 
-        private static void PlotAssetPrices(AssetModel[] models, string[] titles, OxyColor[] colors, string plotTitle)
+        private static void PlotAssetPrices(AssetModel[] models, string[] titles, OxyColor[] colors, string directory, string plotTitle)
         {
             var plotModel = new PlotModel
             {
@@ -151,8 +156,7 @@ namespace PortfolioStrategy
                     },
                     new OxyPlot.Axes.LinearAxis(){
                             Position = AxisPosition.Left,
-                            Minimum = 0,
-                            Maximum = 100
+                            Minimum = 0
                     }
                 }
             };
@@ -173,10 +177,10 @@ namespace PortfolioStrategy
             }
 
             var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
-            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+            pngExporter.ExportToFile(plotModel, directory + plotTitle + ".png");
         }
 
-        private static void PlotCumulativeProfits(List<ValueOnDate> cumulativeProfits, string title, OxyColor color, string plotTitle)
+        private static void PlotCumulativeProfits(List<ValueOnDate> cumulativeProfits, string title, OxyColor color, string directory, string plotTitle)
         {
             var maxValue = cumulativeProfits.Select(_ => Math.Abs(_.Value)).Max();
             var plotModel = new PlotModel
@@ -221,11 +225,11 @@ namespace PortfolioStrategy
             plotModel.Series.Add(series0);
 
             var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
-            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+            pngExporter.ExportToFile(plotModel, directory + plotTitle + ".png");
         }
 
-        private static void PlotBankDynamic(List<ValueOnDate> cumulativeProfits, List<ValueOnDate> profits, 
-            string titleCp, string titleP, OxyColor colorCp, OxyColor colorP, string plotTitle)
+        private static void PlotBankDynamicAndProfits(List<ValueOnDate> cumulativeProfits, List<ValueOnDate> profits, 
+            string titleCp, string titleP, OxyColor colorCp, OxyColor colorP, string directory, string plotTitle)
         {
             var maxValue = cumulativeProfits.Select(_ => Math.Abs(_.Value)).Max();
             var plotModel = new PlotModel
@@ -292,10 +296,10 @@ namespace PortfolioStrategy
             plotModel.Series.Add(series0);
 
             var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
-            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+            pngExporter.ExportToFile(plotModel, directory + plotTitle + ".png");
         }
 
-        private static void PlotProfits(List<ValueOnDate> profits, string title, OxyColor color, string plotTitle, DateTime start, DateTime end)
+        private static void PlotProfits(List<ValueOnDate> profits, string title, OxyColor color, string directory, string plotTitle, DateTime start, DateTime end)
         {
             var maxValue = profits.Select(_ => Math.Abs(_.Value)).Max();
             var plotModel = new PlotModel
@@ -350,7 +354,7 @@ namespace PortfolioStrategy
             plotModel.Series.Add(series0);
 
             var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
-            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+            pngExporter.ExportToFile(plotModel, directory + plotTitle + ".png");
         }
     }
 }

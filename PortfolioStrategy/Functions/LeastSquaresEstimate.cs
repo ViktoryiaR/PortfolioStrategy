@@ -39,7 +39,7 @@ namespace PortfolioStrategy.Functions
 
             var wOpt = variables.Select(_ => or.OptimalPoint[_]).ToArray();
 
-            Console.WriteLine("Minimized to: " + or.OptimalValue);
+            Console.WriteLine("Minimized to: " + or.OptimalValue/x.Length);
 
             return wOpt;
         }
