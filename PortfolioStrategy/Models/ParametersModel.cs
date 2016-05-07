@@ -2,6 +2,8 @@
 {
     class ParametersModel
     {
+        public int CountOfYearsForEstimation { get; set; }
+
         public int[] NumsRegressionDays { get; set; }
 
         public int NumLastChanges { get; set; }
@@ -22,6 +24,8 @@
 
         public ParametersModel(ParametersModel initialParameters)
         {
+            this.CountOfYearsForEstimation = initialParameters.CountOfYearsForEstimation;
+
             this.NumsRegressionDays = initialParameters.NumsRegressionDays;
             this.NumLastChanges = initialParameters.NumLastChanges;
             this.NumClusters = initialParameters.NumClusters;

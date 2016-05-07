@@ -24,7 +24,7 @@ namespace PortfolioStrategy.Models
         public AssetModel(string sourceFilePath, int[] numRegressionDays)
         {
             string[] lines = { };
-            using (StreamReader reader = new StreamReader(sourceFilePath))
+            using (var reader = new StreamReader(sourceFilePath))
             {
                 lines = reader.ReadToEnd().Split(lines, StringSplitOptions.RemoveEmptyEntries);
             }
@@ -53,7 +53,7 @@ namespace PortfolioStrategy.Models
 
                 dayInformations[i].LastDaysPrices = new double[numRegressionDays.Length][];
 
-                for (int j = 0; j < numRegressionDays.Length; j++)
+                for (var j = 0; j < numRegressionDays.Length; j++)
                 {
                     dayInformations[i].LastDaysPrices[j] = dayInformations
                         .SubArray(i - numRegressionDays[j], numRegressionDays[j]).Select(_ => _.Price).ToArray();
