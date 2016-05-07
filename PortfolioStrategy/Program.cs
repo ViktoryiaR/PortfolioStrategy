@@ -75,10 +75,24 @@ namespace PortfolioStrategy
                 new[] { OxyColors.DarkOliveGreen, OxyColors.DarkMagenta }, 
                 "DDDRegression");
 
+            var meanChangeAbs = regressionY.Select(Math.Abs).Average();
+            var maxBank = 0.0;
+            var bestTreshold = 0.0;
+            for (var t = meanChangeAbs/100; t < 2 * meanChangeAbs; t += meanChangeAbs / 100)
+            {
+                parameters.Threshold = t;
+                var bank = Trading.Trade(dddRegressionPart, parameters).Bank;
+
+                if (bank <= maxBank) continue;
+
+                maxBank = bank;
+                bestTreshold = t;
+            }
+
             var startIndex = dddEstimatingPart.DayInformations.Length;
             var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
 
-            parameters.Threshold = 0.05;
+            parameters.Threshold = bestTreshold;
             var result = Trading.Trade(dddTradingPart, parameters);
             Console.WriteLine(result.Bank);
 

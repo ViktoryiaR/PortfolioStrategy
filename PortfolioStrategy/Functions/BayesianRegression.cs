@@ -1,9 +1,7 @@
 ﻿using System;
-
 using FuncLib.Functions;
-using PortfolioStrategy.Functions;
 
-namespace PortfolioStrategy
+namespace PortfolioStrategy.Functions
 {
     class BayesianRegression
     {
