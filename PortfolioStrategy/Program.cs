@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -78,7 +79,11 @@ namespace PortfolioStrategy
             var dddTradingPart = ddd.GetSecondTimeInterval(startIndex);
 
             parameters.Threshold = 0.05;
-            Trading.Trade(dddTradingPart, parameters);
+            var result = Trading.Trade(dddTradingPart, parameters);
+            Console.WriteLine(result.Bank);
+
+            PlotCumulativeProfits(result.CumulativeProfits, "Bank", OxyColors.DarkSeaGreen, "DDDBank");
+            PlotProfits(result.Profits, "Profits", OxyColors.Navy, "DDDProfits");
         }
 
         private static AssetModel CreateEstimatedModel(AssetModel model, double[] r, double[][] dp, double[] w)
@@ -139,6 +144,106 @@ namespace PortfolioStrategy
                 }
                 plotModel.Series.Add(series);
             }
+
+            var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
+            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+        }
+
+        private static void PlotCumulativeProfits(List<ValueOnDate> cumulativeProfits, string title, OxyColor color, string plotTitle)
+        {
+            var maxValue = cumulativeProfits.Select(_ => Math.Abs(_.Value)).Max();
+            var plotModel = new PlotModel
+            {
+                IsLegendVisible = true,
+                Axes = {
+                    new OxyPlot.Axes.DateTimeAxis(){
+                            Position = AxisPosition.Bottom,
+                            IntervalType = DateTimeIntervalType.Months,
+                            StringFormat = "yyyy-MM"
+                    },
+                    new OxyPlot.Axes.LinearAxis(){
+                            Position = AxisPosition.Left,
+                            Maximum = 1.2*maxValue,
+                            Minimum = -1.2*maxValue
+                    }
+                }
+            };
+
+            var series = new OxyPlot.Series.LineSeries()
+            {
+                Title = title,
+                Color = color,
+                DataFieldX = "Date"
+            };
+            foreach (var day in cumulativeProfits)
+            {
+                series.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(day.Date), day.Value));
+            }
+            plotModel.Series.Add(series);
+
+            var series0 = new OxyPlot.Series.LineSeries()
+            {
+                Color = OxyColors.Black,
+                StrokeThickness = 1,
+                DataFieldX = "Date"
+            };
+            series0.Points.Add(new DataPoint(
+                OxyPlot.Axes.DateTimeAxis.ToDouble(cumulativeProfits[0].Date), 0));
+            series0.Points.Add(new DataPoint(
+                OxyPlot.Axes.DateTimeAxis.ToDouble(cumulativeProfits[cumulativeProfits.Count - 1].Date), 0));
+            plotModel.Series.Add(series0);
+
+            var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
+            pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");
+        }
+
+        private static void PlotProfits(List<ValueOnDate> profits, string title, OxyColor color, string plotTitle)
+        {
+            var maxValue = profits.Select(_ => Math.Abs(_.Value)).Max();
+            var plotModel = new PlotModel
+            {
+                IsLegendVisible = true,
+                Axes = {
+                    new OxyPlot.Axes.DateTimeAxis(){
+                            Position = AxisPosition.Bottom,
+                            IntervalType = DateTimeIntervalType.Months,
+                            StringFormat = "yyyy-MM"
+                    },
+                    new OxyPlot.Axes.LinearAxis(){
+                            Position = AxisPosition.Left,
+                            Maximum = 1.2*maxValue,
+                            Minimum = -1.2*maxValue
+                    }
+                }
+            };
+
+            foreach (var profit in profits)
+            {
+                var series = new OxyPlot.Series.LineSeries()
+                {
+                    Color = color,
+                    DataFieldX = "Date",
+                    MarkerSize = 5,
+                    MarkerFill = OxyColors.Red,
+                    MarkerType = MarkerType.Circle
+                };
+                series.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(profit.Date), profit.Value));
+                series.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(profit.Date), 0));
+
+                plotModel.Series.Add(series);
+            }
+
+            var series0 = new OxyPlot.Series.LineSeries()
+            {
+                Color = OxyColors.Black,
+                DataFieldX = "Date",
+                StrokeThickness = 1
+            };
+            series0.Points.Add(new DataPoint(
+                OxyPlot.Axes.DateTimeAxis.ToDouble(profits[0].Date), 0));
+            series0.Points.Add(new DataPoint(
+                OxyPlot.Axes.DateTimeAxis.ToDouble(profits[profits.Count - 1].Date), 0));
+            plotModel.Series.Add(series0);
 
             var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
             pngExporter.ExportToFile(plotModel, "../../../Assets/" + plotTitle + ".png");

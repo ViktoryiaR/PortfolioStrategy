@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using PortfolioStrategy.Models;
 
 namespace PortfolioStrategy.Functions
 {
-    static class Trading
+    class Trading
     {
-        static public void Trade(AssetModel model, ParametersModel parameters)
+        public static ResultModel Trade(AssetModel model, ParametersModel parameters)
         {
             var position = 0;
             var bank = 0.0;
 
             var error = 0.0;
 
+            int L = 0;
+
             bool isTrade = false;
-            var profits = new List<double>();
-            var cumProfit = 0.0;
+            var profits = new List<ValueOnDate>();
+            var cumulativeProfits = new List<ValueOnDate>();
+            var lastBank = 0.0;
 
             var n = model.DayInformations.Length - 1;
             var dp = new double[n][];
@@ -47,7 +51,6 @@ namespace PortfolioStrategy.Functions
                 {
                     position++;
                     bank -= model.DayInformations[i].Price;
-                    Console.WriteLine("BUY - Bank: " + bank + " - Position: " + position);
                     isTrade = true;
                 }
                 //SELL
@@ -55,21 +58,81 @@ namespace PortfolioStrategy.Functions
                 {
                     position--;
                     bank += model.DayInformations[i].Price;
-                    Console.WriteLine("SELL - Bank: " + bank + " - Position: " + position);
                     isTrade = true;
                 }
 
                 if (isTrade && position == 0)
                 {
-                    profits.Add(bank - cumProfit);
-                    cumProfit = bank;
+                    L++;
+                    profits.Add(new ValueOnDate {
+                        Date = model.DayInformations[i].Date,
+                        Value = bank - lastBank
+                    });
+                    lastBank = bank;
                 }
 
                 isTrade = false;
+                cumulativeProfits.Add(new ValueOnDate
+                {
+                    Date = model.DayInformations[i].Date,
+                    Value = bank
+                });
             }
 
-            Console.WriteLine("Error = " + error);
-            Console.WriteLine("Bank = " + bank);
+            if (position == 1)
+            {
+                position--;
+
+                bank += model.DayInformations[n].Price;
+
+                L++;
+                profits.Add(new ValueOnDate
+                {
+                    Date = model.DayInformations[n].Date,
+                    Value = bank - lastBank
+                });
+                cumulativeProfits.Add(new ValueOnDate
+                {
+                    Date = model.DayInformations[n].Date,
+                    Value = bank
+                });
+                lastBank = bank;
+            }
+            if (position == -1)
+            {
+                position++;
+                bank -= model.DayInformations[n].Price;
+
+                L++;
+                profits.Add(new ValueOnDate
+                {
+                    Date = model.DayInformations[n].Date,
+                    Value = bank - lastBank
+                });
+                cumulativeProfits.Add(new ValueOnDate
+                {
+                    Date = model.DayInformations[n].Date,
+                    Value = bank
+                });
+                lastBank = bank;
+            }
+
+            error /= n;
+
+            double meanP = Similarity.Mean(profits.Select(_ => _.Value).ToArray());
+            double stdP = Similarity.Std(profits.Select(_ => _.Value).ToArray());
+
+            double C = Math.Abs(model.DayInformations[0].Price - model.DayInformations[n].Price);
+            double sharpeRatio = (meanP * L - C) / L / stdP;
+
+            return new ResultModel()
+            {
+                Bank = bank,
+                AveragePredictionError = error,
+                Profits = profits,
+                CumulativeProfits = cumulativeProfits,
+                SharpeRatio = sharpeRatio
+            };
         }
     }
 }
