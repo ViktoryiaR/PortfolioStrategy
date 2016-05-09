@@ -75,6 +75,7 @@
     <Compile Include="Functions\KMeans.cs" />
     <Compile Include="Functions\LeastSquaresEstimate.cs" />
     <Compile Include="Models\ParametersModel.cs" />
+    <Compile Include="Models\PortfolioResultModel.cs" />
     <Compile Include="Models\ResultModel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

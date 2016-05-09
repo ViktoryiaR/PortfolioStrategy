@@ -25,27 +25,66 @@ namespace PortfolioStrategy
                 C = -0.01
             };
 
-            var assetName = "XOM";
-            var assetDirectory = "../../../Assets/" + assetName + "/";
+            var assetNames = new []{"DDD", "IBM", "TWX", "CCE", "JNJ", "XOM"};
+            var assetDirectories = new string[assetNames.Length];
+            var assetModels = new AssetModel[assetNames.Length];
+            var assetEstimatingParts = new AssetModel[assetNames.Length];
+            var assetTradingParts = new AssetModel[assetNames.Length];
+            var assetParameters = new ParametersModel[assetNames.Length];
+            for (var i = 0; i < assetNames.Length; i++)
+            {
+                assetDirectories[i] = "../../../Assets/" + assetNames[i] + "/";
 
-            var assetModel = new AssetModel(assetDirectory + assetName + ".csv", initialParameters.NumsRegressionDays);
-            PlotAssetPrices(new[] { assetModel }, new[] { assetName }, new[] { OxyColors.BlueViolet }, assetDirectory, assetName + " - All Time-Series");
+                assetModels[i] = new AssetModel(assetDirectories[i] + assetNames[i] + ".csv", initialParameters.NumsRegressionDays);
+                PlotAssetPrices(
+                    new[] { assetModels[i] }, 
+                    new[] { assetNames[i] }, 
+                    new[] { OxyColors.BlueViolet },
+                    assetDirectories[i],
+                    assetNames[i] + " - All Time-Series");
 
-            var assetEstimatingPart = assetModel.GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
-            var assetParameters = EstimateAssetParameters(assetName, assetDirectory, assetEstimatingPart, initialParameters);
+                assetEstimatingParts[i] = assetModels[i].GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
+                assetParameters[i] = EstimateAssetParameters(
+                    assetNames[i], 
+                    assetDirectories[i],
+                    assetEstimatingParts[i], 
+                    initialParameters);
 
-            var startIndex = assetEstimatingPart.DayInformations.Length;
-            var dddTradingPart = assetModel.GetSecondTimeInterval(startIndex);
+                var startIndex = assetEstimatingParts[i].DayInformations.Length;
+                assetTradingParts[i] = assetModels[i].GetSecondTimeInterval(startIndex);
+            }
 
-            var assetResult = Trading.Trade(dddTradingPart, assetParameters);
-            Console.WriteLine(assetResult.Bank);
+            var result = Trading.TradePortfolio(0.0, new[] {10.0, 10.0, 10.0, 10.0, 10.0, 10.0}, assetTradingParts, assetParameters);
 
-            PlotCumulativeProfits(assetResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, assetDirectory, assetName + " - Bank Dynamic");
-            PlotProfits(assetResult.Profits, "Profits", OxyColors.Navy, assetDirectory, assetName + " - Profits",
-                assetResult.CumulativeProfits[0].Date, assetResult.CumulativeProfits[assetResult.CumulativeProfits.Count - 1].Date);
+            Console.WriteLine(result.Bank);
+            foreach (var w in result.Weights)
+            {
+                Console.WriteLine(w);
+            }
 
-            PlotBankDynamicAndProfits(assetResult.CumulativeProfits, assetResult.Profits, 
-                "Bank" , "Profits", OxyColors.RosyBrown, OxyColors.Navy, assetDirectory, assetName + " - Bank Dynamic and Profits");
+            //var assetName = "XOM";
+            //var assetDirectory = "../../../Assets/" + assetName + "/";
+
+            //var assetModel = new AssetModel(assetDirectory + assetName + ".csv", initialParameters.NumsRegressionDays);
+            //PlotAssetPrices(new[] { assetModel }, new[] { assetName }, new[] { OxyColors.BlueViolet }, assetDirectory, assetName + " - All Time-Series");
+
+            //var assetEstimatingPart = assetModel.GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
+            //var assetParameters = EstimateAssetParameters(assetName, assetDirectory, assetEstimatingPart, initialParameters);
+
+            //var startIndex = assetEstimatingPart.DayInformations.Length;
+            //var dddTradingPart = assetModel.GetSecondTimeInterval(startIndex);
+
+            //var assetResult = Trading.Trade(dddTradingPart, assetParameters);
+            //Console.WriteLine(assetResult.Bank);
+
+            //PlotCumulativeProfits(assetResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, assetDirectory, assetName + " - Bank Dynamic");
+            //PlotProfits(assetResult.Profits, "Profits", OxyColors.Navy, assetDirectory, assetName + " - Profits",
+            //    assetResult.CumulativeProfits[0].Date, assetResult.CumulativeProfits[assetResult.CumulativeProfits.Count - 1].Date);
+
+            //PlotBankDynamicAndProfits(assetResult.CumulativeProfits, assetResult.Profits, 
+            //    "Bank" , "Profits", OxyColors.RosyBrown, OxyColors.Navy, assetDirectory, assetName + " - Bank Dynamic and Profits");
+
+
         }
 
         private static ParametersModel EstimateAssetParameters(string assetName, string assetDirectory, AssetModel estimationModel, ParametersModel initialParameters)
