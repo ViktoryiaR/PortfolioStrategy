@@ -65,8 +65,8 @@ namespace PortfolioStrategy
             var result = Trading.TradePortfolio(5000.0, 
                 //new [] { 0.6713, 0.0000416844, 0.328659 },
                 //new [] { 0.129775, 0.208825, 0.6614 },
-                new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
-                //new [] {1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) }, 
+                //new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+                new [] {1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) }, 
                 assetTradingParts, assetParameters);
 
             Console.WriteLine(result.Bank);
@@ -75,28 +75,55 @@ namespace PortfolioStrategy
             {
                 Console.WriteLine(w);
             }
-
-            //var assetName = "XOM";
-            //var assetDirectory = "../../../Assets/" + assetName + "/";
-
-            //var assetModel = new AssetModel(assetDirectory + assetName + ".csv", initialParameters.NumsRegressionDays);
-            //PlotAssetPrices(new[] { assetModel }, new[] { assetName }, new[] { OxyColors.BlueViolet }, assetDirectory, assetName + " - All Time-Series");
-
-            //var assetEstimatingPart = assetModel.GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
-            //var assetParameters = EstimateAssetParameters(assetName, assetDirectory, assetEstimatingPart, initialParameters);
-
-            //var startIndex = assetEstimatingPart.DayInformations.Length;
-            //var dddTradingPart = assetModel.GetSecondTimeInterval(startIndex);
-
-            //var assetResult = Trading.Trade(dddTradingPart, assetParameters);
-            //Console.WriteLine(assetResult.Bank);
-
+            PlotData(
+                new [] { result.BankDynamic, result.GMBankDynamic},
+                new[] { "Bank Dynamic", "GM Bank Dynamimc (MaxReturn)" },
+                new[] { OxyColors.Green , OxyColors.Red }, 
+                "../../../Assets/", "Portfolio - Bank Dynamic");
             //PlotCumulativeProfits(assetResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, assetDirectory, assetName + " - Bank Dynamic");
             //PlotProfits(assetResult.Profits, "Profits", OxyColors.Navy, assetDirectory, assetName + " - Profits",
             //    assetResult.CumulativeProfits[0].Date, assetResult.CumulativeProfits[assetResult.CumulativeProfits.Count - 1].Date);
 
             //PlotBankDynamicAndProfits(assetResult.CumulativeProfits, assetResult.Profits, 
             //    "Bank" , "Profits", OxyColors.RosyBrown, OxyColors.Navy, assetDirectory, assetName + " - Bank Dynamic and Profits");
+        }
+
+        private static void PlotData(List<ValueOnDate>[] data, string[] title, OxyColor[] color, string directory, string plotTitle)
+        {
+            var plotModel = new PlotModel
+            {
+                IsLegendVisible = true,
+                Axes = {
+                    new OxyPlot.Axes.DateTimeAxis(){
+                            Position = AxisPosition.Bottom,
+                            IntervalType = DateTimeIntervalType.Months,
+                            StringFormat = "yyyy-MM"
+                    },
+                    new OxyPlot.Axes.LinearAxis(){
+                            Position = AxisPosition.Left,
+                            Maximum = 1.01 * data[0].Max(_ => _.Value),
+                            Minimum = -1.01 * data[0].Min(_ => _.Value)
+                    }
+                }
+            };
+
+            for(var i = 0; i < data.Length; i++)
+            {
+                var series = new OxyPlot.Series.LineSeries()
+                {
+                    Title = title[i],
+                    Color = color[i],
+                    DataFieldX = "Date"
+                };
+                foreach (var day in data[i])
+                {
+                    series.Points.Add(new DataPoint(OxyPlot.Axes.DateTimeAxis.ToDouble(day.Date), day.Value));
+                }
+                plotModel.Series.Add(series);
+            }
+
+            var pngExporter = new PngExporter { Width = 1200, Height = 800, Background = OxyColors.White };
+            pngExporter.ExportToFile(plotModel, directory + plotTitle + ".png");
         }
 
         private static ParametersModel EstimateAssetParameters(string assetName, string assetDirectory, AssetModel estimationModel, ParametersModel initialParameters)
