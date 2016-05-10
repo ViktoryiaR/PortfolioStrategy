@@ -18,14 +18,22 @@ namespace PortfolioStrategy
             {
                 CountOfYearsForEstimation = 2,
 
-                NumsRegressionDays = new[] { 30, 60, 120 },
+                NumsRegressionDays = new[] { 20, 40, 80 },
                 NumLastChanges = 10,
-                NumClusters = 20,
+                NumClusters = 10,
 
                 C = -0.01
             };
 
-            var assetNames = new []{"DDD", "IBM", "TWX", "CCE", "JNJ", "XOM"};
+            var assetNames = new []
+            {
+                "DDD",
+                "IBM",
+                "TWX",
+                "CCE",
+                "JNJ",
+                "XOM"
+            };
             var assetDirectories = new string[assetNames.Length];
             var assetModels = new AssetModel[assetNames.Length];
             var assetEstimatingParts = new AssetModel[assetNames.Length];
@@ -54,9 +62,15 @@ namespace PortfolioStrategy
                 assetTradingParts[i] = assetModels[i].GetSecondTimeInterval(startIndex);
             }
 
-            var result = Trading.TradePortfolio(0.0, new[] {10.0, 10.0, 10.0, 10.0, 10.0, 10.0}, assetTradingParts, assetParameters);
+            var result = Trading.TradePortfolio(5000.0, 
+                //new [] { 0.6713, 0.0000416844, 0.328659 },
+                //new [] { 0.129775, 0.208825, 0.6614 },
+                new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+                //new [] {1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) }, 
+                assetTradingParts, assetParameters);
 
             Console.WriteLine(result.Bank);
+            Console.WriteLine(result.PortfolioBank);
             foreach (var w in result.Weights)
             {
                 Console.WriteLine(w);
@@ -83,8 +97,6 @@ namespace PortfolioStrategy
 
             //PlotBankDynamicAndProfits(assetResult.CumulativeProfits, assetResult.Profits, 
             //    "Bank" , "Profits", OxyColors.RosyBrown, OxyColors.Navy, assetDirectory, assetName + " - Bank Dynamic and Profits");
-
-
         }
 
         private static ParametersModel EstimateAssetParameters(string assetName, string assetDirectory, AssetModel estimationModel, ParametersModel initialParameters)

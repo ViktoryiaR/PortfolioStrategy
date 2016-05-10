@@ -7,14 +7,28 @@ namespace PortfolioStrategy.Functions
 {
     class Trading
     {
-        public static PortfolioResultModel TradePortfolio(double additionalBank, double[] weights, AssetModel[] models, ParametersModel[] parameters)
+        public static PortfolioResultModel TradePortfolio(double bank, double[] weights, AssetModel[] models, ParametersModel[] parameters)
         {
-            var bank = additionalBank;
+            var initialBank = bank;
 
-            var ndays = models[0].DayInformations.Length - 1;
+            int ndays = models[0].DayInformations.Length - 1;
             var nassets = models.Length;
 
-            for (var i = 0; i < ndays; i++)
+            var assetCounts = new double[nassets];
+            var initialCounts = new double[nassets];
+
+            //buy assets
+            for (var j = 0; j < nassets; j++)
+            {
+                assetCounts[j] = Math.Truncate(initialBank / models.Length / models[j].DayInformations[0].Price);
+                initialCounts[j] = Math.Truncate(initialBank * weights[j] / models[j].DayInformations[0].Price);
+                bank -= assetCounts[j] * models[j].DayInformations[0].Price;
+                Console.WriteLine(j + ". " + assetCounts[j] + " - " + models[j].DayInformations[0].Price);
+            }
+            initialBank = bank;
+            Console.WriteLine("Bank: " + bank);
+
+            for (var i = 1; i < ndays; i++)
             {
                 for (var j = 0; j < nassets; j++)
                 {
@@ -39,24 +53,50 @@ namespace PortfolioStrategy.Functions
                     if (dP > parameters[j].Threshold && bank >= models[j].DayInformations[i].Price)
                     {
                         //position++;
-                        bank -= models[j].DayInformations[i].Price;
-                        weights[j]++;
+                        var count = Math.Truncate(dP / parameters[j].Threshold);
+                        var c = 0; 
+                        while (c < count && bank >= models[j].DayInformations[i].Price)
+                        {
+                            bank -= models[j].DayInformations[i].Price;
+                            c++;
+                            assetCounts[j]++;
+                        }
+                        //assetCounts[j] += c;
+                        Console.WriteLine(j + ". " + "BUY: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
                         //isTrade = true;
                     }
                     //SELL
-                    if (dP < -parameters[j].Threshold && weights[j] >= 1)
+                    if (dP < -parameters[j].Threshold && assetCounts[j] >= 1)
                     {
                         //position--;
-                        bank += models[j].DayInformations[i].Price;
-                        weights[j]--;
+                        var count = Math.Truncate(dP / (-parameters[j].Threshold));
+                        var c = 0;
+                        while (c < count && assetCounts[j] >= 1)
+                        {
+                            bank += models[j].DayInformations[i].Price;
+                            c++;
+                            assetCounts[j]--;
+                        }
+                        //assetCounts[j] -= c;
+                        Console.WriteLine(j + ". " + "SELL: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
                         //isTrade = true;
                     }
                 }
             }
+
+            var portfolioBank = initialBank;
+            //sell assets
+            for (var j = 0; j < nassets; j++)
+            {
+                bank += assetCounts[j] * models[j].DayInformations[ndays].Price;
+                portfolioBank += initialCounts[j] * models[j].DayInformations[ndays].Price;
+            }
+
             return new PortfolioResultModel
             {
                 Bank = bank,
-                Weights = weights
+                Weights = assetCounts,
+                PortfolioBank = portfolioBank
             };
         }
 

@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Functions\BayesianRegression.cs" />
+    <Compile Include="Functions\MarkowitzPortfolio.cs" />
     <Compile Include="Models\AssetModel.cs" />
     <Compile Include="Functions\KMeans.cs" />
     <Compile Include="Functions\LeastSquaresEstimate.cs" />
