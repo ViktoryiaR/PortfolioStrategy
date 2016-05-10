@@ -62,24 +62,33 @@ namespace PortfolioStrategy
                 assetTradingParts[i] = assetModels[i].GetSecondTimeInterval(startIndex);
             }
 
-            var result = Trading.TradePortfolio(5000.0, 
-                //new [] { 0.6713, 0.0000416844, 0.328659 },
-                //new [] { 0.129775, 0.208825, 0.6614 },
-                //new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
-                new [] {1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) }, 
+            //var resultMR = Trading.TradePortfolio(5000.0, 
+            //    //new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+            //    new [] {1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) }, 
+            //    assetTradingParts, assetParameters);
+
+            //var resultMV = Trading.TradePortfolio(5000.0,
+            //    new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+            //    //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
+            //    assetTradingParts, assetParameters);
+
+            //Console.WriteLine(resultMR.Bank);
+            //Console.WriteLine(resultMR.PortfolioBank);
+            //Console.WriteLine(resultMV.PortfolioBank);
+            //PlotData(
+            //    new [] { resultMR.BankDynamic, resultMR.GMBankDynamic, resultMV.GMBankDynamic},
+            //    new[] { "Bank Dynamic", "GM Bank Dynamimc (Max Return)", "GM Bank Dynamimc (Min Variance)" },
+            //    new[] { OxyColors.Green , OxyColors.Red, OxyColors.Violet }, 
+            //    "../../../Assets/", "Portfolio - Bank Dynamic");
+
+            var resultFullTrade = Trading.TradeFullPortfolio(5000.0,
+                new[] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+                //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
                 assetTradingParts, assetParameters);
 
-            Console.WriteLine(result.Bank);
-            Console.WriteLine(result.PortfolioBank);
-            foreach (var w in result.Weights)
-            {
-                Console.WriteLine(w);
-            }
-            PlotData(
-                new [] { result.BankDynamic, result.GMBankDynamic},
-                new[] { "Bank Dynamic", "GM Bank Dynamimc (MaxReturn)" },
-                new[] { OxyColors.Green , OxyColors.Red }, 
-                "../../../Assets/", "Portfolio - Bank Dynamic");
+            Console.WriteLine(resultFullTrade.Bank);
+            Console.WriteLine(resultFullTrade.PortfolioBank);
+
             //PlotCumulativeProfits(assetResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, assetDirectory, assetName + " - Bank Dynamic");
             //PlotProfits(assetResult.Profits, "Profits", OxyColors.Navy, assetDirectory, assetName + " - Profits",
             //    assetResult.CumulativeProfits[0].Date, assetResult.CumulativeProfits[assetResult.CumulativeProfits.Count - 1].Date);
@@ -101,8 +110,8 @@ namespace PortfolioStrategy
                     },
                     new OxyPlot.Axes.LinearAxis(){
                             Position = AxisPosition.Left,
-                            Maximum = 1.01 * data[0].Max(_ => _.Value),
-                            Minimum = -1.01 * data[0].Min(_ => _.Value)
+                            Maximum = 1.1 * data.Select(_ => _.Max(__ => __.Value)).Max(),
+                            Minimum = 0.9 * data.Select(_ => _.Min(__ => __.Value)).Min()
                     }
                 }
             };
