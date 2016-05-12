@@ -7,7 +7,8 @@ namespace PortfolioStrategy.Functions
 {
     class Trading
     {
-        public static PortfolioResultModel TradeFullPortfolio(double bank, double[] weights, AssetModel[] models, ParametersModel[] parameters)
+        public static PortfolioResultModel TradeFullPortfolio(double bank, double[] weights, AssetModel[] models,
+            ParametersModel[] parameters)
         {
             var initialBank = bank;
             var portfolioBank = bank;
@@ -24,13 +25,15 @@ namespace PortfolioStrategy.Functions
             //buy assets
             for (var j = 0; j < nassets; j++)
             {
-                assetCounts[j] = initialBank * weights[j] / models[j].DayInformations[0].Price;//initialBank / models.Length / models[j].DayInformations[0].Price;
-                initialCounts[j] = initialBank * weights[j] / models[j].DayInformations[0].Price;
-                bank -= assetCounts[j] * models[j].DayInformations[0].Price;
-                portfolioBank -= initialCounts[j] * models[j].DayInformations[0].Price;
+                assetCounts[j] = initialBank*weights[j]/models[j].DayInformations[0].Price;
+                    //initialBank / models.Length / models[j].DayInformations[0].Price;
+                initialCounts[j] = initialBank*weights[j]/models[j].DayInformations[0].Price;
+                bank -= assetCounts[j]*models[j].DayInformations[0].Price;
+                portfolioBank -= initialCounts[j]*models[j].DayInformations[0].Price;
                 Console.WriteLine(j + ". " + assetCounts[j] + " - " + models[j].DayInformations[0].Price);
             }
             Console.WriteLine("Bank: " + bank);
+            Console.WriteLine("Portfolio Bank: " + portfolioBank);
             portfolioCosts[0] = GMPortfolioCosts[0] = new ValueOnDate
             {
                 Value = initialBank,
@@ -47,21 +50,21 @@ namespace PortfolioStrategy.Functions
                         dp[k] = BayesianRegression.Bayesian(models[j].DayInformations[i].LastDaysPrices[k],
                             parameters[j].Kmeans[k], parameters[j].C);
                     }
-                    var r = models[j].DayInformations[i].Volume / parameters[j].AverageVolume;
+                    var r = models[j].DayInformations[i].Volume/parameters[j].AverageVolume;
 
                     var dP = parameters[j].W[0];
                     for (var k = 0; k < dp.Length; k++)
                     {
-                        dP += dp[k] * parameters[j].W[k + 1];
+                        dP += dp[k]*parameters[j].W[k + 1];
                     }
-                    dP += r * parameters[j].W[dp.Length + 1];
+                    dP += r*parameters[j].W[dp.Length + 1];
 
                     //error += Math.Pow(model.DayInformations[i + 1].Price - (model.DayInformations[i].Price + dP), 2);
 
                     //BUY
                     if (dP > parameters[j].Threshold && bank >= models[j].DayInformations[i].Price)
                     {
-                        var count = 1;//dP / parameters[j].Threshold;
+                        var count = 1; //dP / parameters[j].Threshold;
                         var c = 0;
                         while (c < count && bank >= models[j].DayInformations[i].Price)
                         {
@@ -69,12 +72,13 @@ namespace PortfolioStrategy.Functions
                             c++;
                             assetCounts[j]++;
                         }
-                        Console.WriteLine(j + ". " + "BUY: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
+                        Console.WriteLine(j + ". " + "BUY: \t" + c + "\t" + models[j].DayInformations[i].Price +
+                                          "\nBank: " + bank);
                     }
                     //SELL
                     if (dP < -parameters[j].Threshold && assetCounts[j] >= 1)
                     {
-                        var count = 1;//Math.Truncate(dP / (-parameters[j].Threshold));
+                        var count = 1; //Math.Truncate(dP / (-parameters[j].Threshold));
                         var c = 0;
                         while (c < count && assetCounts[j] >= 1)
                         {
@@ -82,7 +86,8 @@ namespace PortfolioStrategy.Functions
                             c++;
                             assetCounts[j]--;
                         }
-                        Console.WriteLine(j + ". " + "SELL: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
+                        Console.WriteLine(j + ". " + "SELL: \t" + c + "\t" + models[j].DayInformations[i].Price +
+                                          "\nBank: " + bank);
                     }
                 }
                 portfolioCosts[i] = new ValueOnDate()
@@ -97,33 +102,34 @@ namespace PortfolioStrategy.Functions
                 };
                 for (var j = 0; j < nassets; j++)
                 {
-                    portfolioCosts[i].Value += assetCounts[j] * models[j].DayInformations[i].Price;
-                    GMPortfolioCosts[i].Value += initialCounts[j] * models[j].DayInformations[i].Price;
+                    portfolioCosts[i].Value += assetCounts[j]*models[j].DayInformations[i].Price;
+                    GMPortfolioCosts[i].Value += initialCounts[j]*models[j].DayInformations[i].Price;
                 }
 
                 for (var j = 0; j < nassets; j++)
                 {
-                    weights[j] = assetCounts[j] * models[j].DayInformations[i].Price / portfolioCosts[i].Value
+                    weights[j] = assetCounts[j]*models[j].DayInformations[i].Price/portfolioCosts[i].Value;
                 }
 
-            //sell assets
-            for (var j = 0; j < nassets; j++)
-            {
-                bank += assetCounts[j] * models[j].DayInformations[ndays].Price;
-                portfolioBank += initialCounts[j] * models[j].DayInformations[ndays].Price;
+                Console.WriteLine("Portfolio Bank: " + portfolioBank);
+                //sell assets
+                for (var j = 0; j < nassets; j++)
+                {
+                    bank += assetCounts[j]*models[j].DayInformations[ndays].Price;
+                    portfolioBank += initialCounts[j]*models[j].DayInformations[ndays].Price;
+                }
+
+                portfolioCosts[ndays] = new ValueOnDate()
+                {
+                    Value = bank,
+                    Date = models[0].DayInformations[ndays].Date
+                };
+                GMPortfolioCosts[ndays] = new ValueOnDate()
+                {
+                    Value = portfolioBank,
+                    Date = models[0].DayInformations[ndays].Date
+                };
             }
-
-            portfolioCosts[ndays] = new ValueOnDate()
-            {
-                Value = bank,
-                Date = models[0].DayInformations[ndays].Date
-            };
-            GMPortfolioCosts[ndays] = new ValueOnDate()
-            {
-                Value = portfolioBank,
-                Date = models[0].DayInformations[ndays].Date
-            };
-
             return new PortfolioResultModel
             {
                 Bank = bank,
@@ -152,12 +158,17 @@ namespace PortfolioStrategy.Functions
             for (var j = 0; j < nassets; j++)
             {
                 assetCounts[j] = 0;//Math.Truncate(initialBank / models.Length / models[j].DayInformations[0].Price);
-                initialCounts[j] = Math.Truncate(initialBank * weights[j] / models[j].DayInformations[0].Price);
+                initialCounts[j] = initialBank * weights[j] / models[j].DayInformations[0].Price;//Math.Truncate(initialBank * weights[j] / models[j].DayInformations[0].Price);
                 bank -= assetCounts[j] * models[j].DayInformations[0].Price;
                 portfolioBank -= initialCounts[j] * models[j].DayInformations[0].Price;
                 Console.WriteLine(j + ". " + assetCounts[j] + " - " + models[j].DayInformations[0].Price);
             }
             Console.WriteLine("Bank: " + bank);
+            Console.WriteLine("Portfolio Bank: " + portfolioBank);
+            for (var j = 0; j < nassets; j++)
+            {
+                Console.WriteLine(initialCounts[j] + "\t" + models[j].DayInformations[0].Price);
+            }
             portfolioCosts[0] = GMPortfolioCosts[0] = new ValueOnDate
             {
                 Value = initialBank,
@@ -196,7 +207,7 @@ namespace PortfolioStrategy.Functions
                             c++;
                             assetCounts[j]++;
                         }
-                        Console.WriteLine(j + ". " + "BUY: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
+                        //Console.WriteLine(j + ". " + "BUY: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
                     }
                     //SELL
                     if (dP < -parameters[j].Threshold && assetCounts[j] >= 1)
@@ -209,7 +220,7 @@ namespace PortfolioStrategy.Functions
                             c++;
                             assetCounts[j]--;
                         }
-                        Console.WriteLine(j + ". " + "SELL: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
+                        //Console.WriteLine(j + ". " + "SELL: \t" + c + "\t" + models[j].DayInformations[i].Price + "\nBank: " + bank);
                     }
                 }
                 portfolioCosts[i] = new ValueOnDate()
@@ -229,6 +240,11 @@ namespace PortfolioStrategy.Functions
                 }
             }
 
+            Console.WriteLine("Portfolio Bank: " + portfolioBank);
+            for (var j = 0; j < nassets; j++)
+            {
+                Console.WriteLine(initialCounts[j] + "\t" + models[j].DayInformations[ndays].Price);
+            }
             //sell assets
             for (var j = 0; j < nassets; j++)
             {

@@ -25,14 +25,23 @@ namespace PortfolioStrategy
                 C = -0.01
             };
 
-            var assetNames = new []
+            //var assetNames = new []
+            //{
+            //    "DDD",
+            //    "IBM",
+            //    "TWX",
+            //    "CCE",
+            //    "JNJ",
+            //    "XOM"
+            //};
+            var assetNames = new[]
             {
-                "DDD",
-                "IBM",
                 "TWX",
-                "CCE",
                 "JNJ",
-                "XOM"
+                "CCE",
+                "XOM",
+                "DDD",
+                "IBM"
             };
             var assetDirectories = new string[assetNames.Length];
             var assetModels = new AssetModel[assetNames.Length];
@@ -44,50 +53,64 @@ namespace PortfolioStrategy
                 assetDirectories[i] = "../../../Assets/" + assetNames[i] + "/";
 
                 assetModels[i] = new AssetModel(assetDirectories[i] + assetNames[i] + ".csv", initialParameters.NumsRegressionDays);
-                PlotAssetPrices(
-                    new[] { assetModels[i] }, 
-                    new[] { assetNames[i] }, 
-                    new[] { OxyColors.BlueViolet },
-                    assetDirectories[i],
-                    assetNames[i] + " - All Time-Series");
+                //PlotAssetPrices(
+                //    new[] { assetModels[i] },
+                //    new[] { assetNames[i] },
+                //    new[] { OxyColors.BlueViolet },
+                //    assetDirectories[i],
+                //    assetNames[i] + " - All Time-Series");
 
                 assetEstimatingParts[i] = assetModels[i].GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
                 assetParameters[i] = EstimateAssetParameters(
-                    assetNames[i], 
+                    assetNames[i],
                     assetDirectories[i],
-                    assetEstimatingParts[i], 
+                    assetEstimatingParts[i],
                     initialParameters);
 
                 var startIndex = assetEstimatingParts[i].DayInformations.Length;
                 assetTradingParts[i] = assetModels[i].GetSecondTimeInterval(startIndex);
             }
 
-            //var resultMR = Trading.TradePortfolio(5000.0, 
-            //    //new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
-            //    new [] {1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) }, 
-            //    assetTradingParts, assetParameters);
+            //PlotData(
+            //    assetModels.Select(_ => _.DayInformations.Select(m => new ValueOnDate()
+            //    {
+            //        Date = m.Date,
+            //        Value = m.Price
+            //    }).ToList()).ToArray(),
+            //     assetNames,
+            //     new [] {OxyColors.Red, OxyColors.Green, OxyColors.Blue, OxyColors.Brown, OxyColors.Olive, OxyColors.Orange},
+            //     "../../../Assets/",
+            //     "All Assets"
+            //    );
 
-            //var resultMV = Trading.TradePortfolio(5000.0,
-            //    new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
-            //    //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
-            //    assetTradingParts, assetParameters);
+            var resultMR = Trading.TradePortfolio(5000.0,
+                //new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+                new [] {0.563571, 0.436426, 2.37744 * Math.Pow(10, -6), 3.27853 * Math.Pow(10, -7), 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7) },
+                //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
+                assetTradingParts, assetParameters);
 
-            //Console.WriteLine(resultMR.Bank);
-            //Console.WriteLine(resultMR.PortfolioBank);
-            //Console.WriteLine(resultMV.PortfolioBank);
+            var resultMV = Trading.TradePortfolio(5000.0,
+                new [] { 0.073236, 0.369994, 0.106351, 0.257233, 0.0161861, 0.177},
+                //new[] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
+                //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
+                assetTradingParts, assetParameters);
+
+            Console.WriteLine(resultMR.Bank);
+            Console.WriteLine(resultMR.PortfolioBank);
+            Console.WriteLine(resultMV.PortfolioBank);
             //PlotData(
             //    new [] { resultMR.BankDynamic, resultMR.GMBankDynamic, resultMV.GMBankDynamic},
             //    new[] { "Bank Dynamic", "GM Bank Dynamimc (Max Return)", "GM Bank Dynamimc (Min Variance)" },
             //    new[] { OxyColors.Green , OxyColors.Red, OxyColors.Violet }, 
             //    "../../../Assets/", "Portfolio - Bank Dynamic");
 
-            var resultFullTrade = Trading.TradeFullPortfolio(5000.0,
+            /*var resultFullTrade = Trading.TradeFullPortfolio(5000.0,
                 new[] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
                 //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
                 assetTradingParts, assetParameters);
 
             Console.WriteLine(resultFullTrade.Bank);
-            Console.WriteLine(resultFullTrade.PortfolioBank);
+            Console.WriteLine(resultFullTrade.PortfolioBank);*/
 
             //PlotCumulativeProfits(assetResult.CumulativeProfits, "Bank", OxyColors.RosyBrown, assetDirectory, assetName + " - Bank Dynamic");
             //PlotProfits(assetResult.Profits, "Profits", OxyColors.Navy, assetDirectory, assetName + " - Profits",
@@ -137,6 +160,7 @@ namespace PortfolioStrategy
 
         private static ParametersModel EstimateAssetParameters(string assetName, string assetDirectory, AssetModel estimationModel, ParametersModel initialParameters)
         {
+            Console.WriteLine(assetName);
             var parameters = new ParametersModel(initialParameters);
 
             parameters.Kmeans = new double[parameters.NumsRegressionDays.Length][][];
@@ -157,6 +181,7 @@ namespace PortfolioStrategy
             var r = new double[numRegressionItems - 1];
 
             parameters.AverageVolume = dddRegressionPart.DayInformations.Select(_ => _.Volume).Average();
+            Console.WriteLine("AverageVolume = " + parameters.AverageVolume);
 
             for (var i = 0; i < numRegressionItems - 1; i++)
             {
@@ -177,6 +202,10 @@ namespace PortfolioStrategy
             }
 
             parameters.W = LeastSquaresEstimate.FindW(regressionX, regressionY);
+            for (var i = 0; i < parameters.W.Length; i++)
+            {
+                Console.WriteLine("w" + i + " = " + parameters.W[i]);
+            }
 
             var dddEstimatedRegressionPart = CreateEstimatedModel(dddRegressionPart, r, dp, parameters.W);
 
@@ -201,6 +230,7 @@ namespace PortfolioStrategy
                 bestThreshold = t;
             }
             parameters.Threshold = bestThreshold;
+            Console.WriteLine("Threshold = " + bestThreshold);
 
             return parameters;
         }
