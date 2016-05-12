@@ -25,15 +25,6 @@ namespace PortfolioStrategy
                 C = -0.01
             };
 
-            //var assetNames = new []
-            //{
-            //    "DDD",
-            //    "IBM",
-            //    "TWX",
-            //    "CCE",
-            //    "JNJ",
-            //    "XOM"
-            //};
             var assetNames = new[]
             {
                 "TWX",
@@ -53,12 +44,6 @@ namespace PortfolioStrategy
                 assetDirectories[i] = "../../../Assets/" + assetNames[i] + "/";
 
                 assetModels[i] = new AssetModel(assetDirectories[i] + assetNames[i] + ".csv", initialParameters.NumsRegressionDays);
-                //PlotAssetPrices(
-                //    new[] { assetModels[i] },
-                //    new[] { assetNames[i] },
-                //    new[] { OxyColors.BlueViolet },
-                //    assetDirectories[i],
-                //    assetNames[i] + " - All Time-Series");
 
                 assetEstimatingParts[i] = assetModels[i].GetFirstTimeInterval(initialParameters.CountOfYearsForEstimation);
                 assetParameters[i] = EstimateAssetParameters(
@@ -83,13 +68,15 @@ namespace PortfolioStrategy
             //     "All Assets"
             //    );
 
-            var resultMR = Trading.TradePortfolio(5000.0,
+            var initialBank = 5000.0; 
+
+            var resultMR = Trading.TradePortfolio(initialBank,
                 //new [] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
                 new [] {0.563571, 0.436426, 2.37744 * Math.Pow(10, -6), 3.27853 * Math.Pow(10, -7), 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7) },
                 //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
                 assetTradingParts, assetParameters);
 
-            var resultMV = Trading.TradePortfolio(5000.0,
+            var resultMV = Trading.TradePortfolio(initialBank,
                 new [] { 0.073236, 0.369994, 0.106351, 0.257233, 0.0161861, 0.177},
                 //new[] { 0.0161861, 0.177, 0.073236, 0.106351, 0.369994, 0.257233 },
                 //new[] { 1.54406 * Math.Pow(10, -7), 1.49623 * Math.Pow(10, -7), 0.563571, 2.37744 * Math.Pow(10, -6), 0.436426, 3.27853 * Math.Pow(10, -7) },
@@ -98,6 +85,31 @@ namespace PortfolioStrategy
             Console.WriteLine(resultMR.Bank);
             Console.WriteLine(resultMR.PortfolioBank);
             Console.WriteLine(resultMV.PortfolioBank);
+
+            var dji = new AssetModel("../../../Assets/!DJI.csv", initialParameters.NumsRegressionDays);
+            var coeffDji = initialBank / dji.DayInformations[0].Price;
+            var djiDinamic = dji.DayInformations.Select(_ => new ValueOnDate() {Date = _.Date, Value = _.Price * coeffDji}).ToList();
+
+            var firstPrice = dji.DayInformations[0].Price;
+            var lastPrice = dji.DayInformations[dji.DayInformations.Length - 1].Price;
+            Console.WriteLine("DJI Bank: " + lastPrice * coeffDji);
+            Console.WriteLine("DJI yield: " + (lastPrice * coeffDji - initialBank)/initialBank);
+
+            var spx = new AssetModel("../../../Assets/SPX.csv", initialParameters.NumsRegressionDays);
+            var coeffSpx = initialBank / spx.DayInformations[0].Price;
+            var spxDinamic = spx.DayInformations.Select(_ => new ValueOnDate() { Date = _.Date, Value = _.Price * coeffSpx }).ToList();
+
+            firstPrice = spx.DayInformations[0].Price;
+            lastPrice = spx.DayInformations[spx.DayInformations.Length - 1].Price;
+            Console.WriteLine("SPX Bank: " + lastPrice * coeffSpx);
+            Console.WriteLine("SPX yield: " + (lastPrice * coeffSpx - initialBank) / initialBank);
+
+            PlotData(
+                new[] { resultMR.BankDynamic, djiDinamic, spxDinamic },
+                new[] { "Bank Dynamic", "DJI Bank Dynamimc", "SPX Bank Dynamimc" },
+                new[] { OxyColors.Green, OxyColors.Blue, OxyColors.Black },
+                "../../../Assets/", "Index - Bank Dynamic");
+
             //PlotData(
             //    new [] { resultMR.BankDynamic, resultMR.GMBankDynamic, resultMV.GMBankDynamic},
             //    new[] { "Bank Dynamic", "GM Bank Dynamimc (Max Return)", "GM Bank Dynamimc (Min Variance)" },
